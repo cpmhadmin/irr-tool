@@ -1,26 +1,265 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>My Project Hub</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Central Park Media Holdings</title>
     <style>
-        /* This is CSS - it makes the page look pretty */
-        body { font-family: sans-serif; text-align: center; padding: 50px; }
-        nav { background: #333; padding: 10px; }
-        nav a { color: white; margin: 0 15px; text-decoration: none; font-weight: bold; }
-        nav a:hover { color: #00d1b2; }
+        :root {
+            --bg-color: #0a0a0a;
+            --text-color: #e9f1ff;
+            --accent-color: #e9f1ff;
+            --glow-color: rgba(233, 241, 255, 0.2);
+            --font-stack: "Courier Prime", "Courier New", ui-monospace, monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: var(--text-color);
+            font-family: var(--font-stack);
+            overflow: hidden;
+        }
+
+        .cpmh-hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+            padding: 20px;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        /* Typing Effect */
+        .cpmh-tty {
+            font-size: clamp(18px, 4vw, 32px);
+            line-height: 1.25;
+            letter-spacing: 0.04em;
+            display: flex;
+            align-items: baseline;
+            white-space: nowrap;
+            text-shadow: 0 0 8px var(--glow-color);
+            min-height: 1.5em;
+        }
+
+        .cpmh-cursor {
+            width: 0.7ch;
+            height: 1.05em;
+            margin-left: 0.15ch;
+            transform: translateY(0.12em);
+            background: currentColor;
+            animation: cpmh-blink 1s steps(1, end) infinite;
+        }
+
+        @keyframes cpmh-blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* Password Section */
+        #passwordArea {
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #passwordArea.visible {
+            opacity: 1;
+        }
+
+        .pass-toggle {
+            background: transparent;
+            border: 1px solid var(--text-color);
+            color: var(--text-color);
+            padding: 8px 16px;
+            font-family: inherit;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 0.1em;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .pass-toggle:hover {
+            background: var(--text-color);
+            color: var(--bg-color);
+            box-shadow: 0 0 15px var(--glow-color);
+        }
+
+        .input-wrap {
+            height: 0;
+            overflow: hidden;
+            transition: height 0.4s ease-out, opacity 0.3s ease;
+            display: flex;
+            gap: 10px;
+            opacity: 0;
+        }
+
+        .input-wrap.open {
+            height: 40px;
+            opacity: 1;
+        }
+
+        input[type="password"] {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(233, 241, 255, 0.3);
+            color: var(--text-color);
+            padding: 5px 12px;
+            font-family: inherit;
+            outline: none;
+            width: 140px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="password"]:focus {
+            border-color: var(--text-color);
+        }
+
+        /* Navigation Menu */
+        #navColumn {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+            padding: 20px;
+            border-left: 1px solid rgba(233, 241, 255, 0.2);
+        }
+
+        #navColumn.revealed {
+            opacity: 1;
+            transform: translateY(0);
+            display: flex;
+        }
+
+        .nav-link {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 16px;
+            letter-spacing: 0.05em;
+            padding: 4px 12px;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+        }
+
+        .nav-link:hover {
+            opacity: 1;
+            padding-left: 18px;
+            text-shadow: 0 0 8px var(--glow-color);
+        }
+
+        .nav-link::before {
+            content: "> ";
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-link:hover::before {
+            opacity: 1;
+        }
     </style>
 </head>
+
 <body>
 
-  <nav>
-  <a href="/">Home</a>
-  <a href="/irr-calculator/">IRR Calculator</a>
-  <a href="/luminate/">Luminate Album Analysis</a>
-  <a href="/eisenhower/">Eisenhower</a></nav>
-    </nav>
+    <div class="cpmh-hero">
+        <div class="cpmh-tty">
+            <span id="cpmhText"></span><span class="cpmh-cursor" aria-hidden="true"></span>
+        </div>
 
-    <h1>Central Park Media Holdings</h1>
-    <p>Select a tool from the menu above to get started.</p>
+        <div id="passwordArea">
+            <button class="pass-toggle" id="passToggle">Access</button>
+            <div class="input-wrap" id="inputWrap">
+                <input type="password" id="passInput" placeholder="Password">
+                <button class="pass-toggle" style="font-size:12px; padding: 4px 10px;" id="unlockBtn">Unlock</button>
+            </div>
+        </div>
 
+        <nav id="navColumn">
+            <a href="/irr-calculator/" class="nav-link">IRR Calculator</a>
+            <a href="/luminate/" class="nav-link">Luminate Album Analysis</a>
+            <a href="/eisenhower/" class="nav-link">Eisenhower</a>
+        </nav>
+    </div>
+
+    <script>
+        (function () {
+            const textEl = document.getElementById("cpmhText");
+            const passArea = document.getElementById("passwordArea");
+            const passToggle = document.getElementById("passToggle");
+            const inputWrap = document.getElementById("inputWrap");
+            const passInput = document.getElementById("passInput");
+            const unlockBtn = document.getElementById("unlockBtn");
+            const navColumn = document.getElementById("navColumn");
+
+            const TEXT = "Central Park Media Holdings";
+            const PASSWORD = "cpmh";
+
+            // Typing Logic
+            function startTyping() {
+                let i = 0;
+                const minDelay = 80;
+                const maxDelay = 150;
+                const randDelay = () => Math.floor(minDelay + Math.random() * (maxDelay - minDelay));
+
+                function tick() {
+                    textEl.textContent = TEXT.slice(0, i++);
+                    if (i <= TEXT.length) {
+                        setTimeout(tick, randDelay());
+                    } else {
+                        setTimeout(() => passArea.classList.add("visible"), 800);
+                    }
+                }
+                tick();
+            }
+
+            // Password Toggle Logic
+            passToggle.addEventListener("click", () => {
+                inputWrap.classList.toggle("open");
+                if (inputWrap.classList.contains("open")) {
+                    passInput.focus();
+                }
+            });
+
+            // Unlock Logic
+            function attemptUnlock() {
+                if (passInput.value.toLowerCase() === PASSWORD) {
+                    passArea.style.display = "none";
+                    navColumn.style.display = "flex";
+                    // Request animation frame to ensure display:flex is applied before animation
+                    requestAnimationFrame(() => {
+                        navColumn.classList.add("revealed");
+                    });
+                } else {
+                    passInput.style.borderColor = "#ff4d4d";
+                    setTimeout(() => passInput.style.borderColor = "", 1000);
+                    passInput.value = "";
+                }
+            }
+
+            unlockBtn.addEventListener("click", attemptUnlock);
+            passInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") attemptUnlock();
+            });
+
+            // Startup
+            setTimeout(startTyping, 500);
+        })();
+    </script>
 </body>
+
 </html>
