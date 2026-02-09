@@ -1,1 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eisenhower Matrix - Put First Things First</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+
+            --q1-color: #ef4444;
+            /* Red */
+            --q1-bg: #fef2f2;
+            --q2-color: #3b82f6;
+            /* Blue */
+            --q2-bg: #eff6ff;
+            --q3-color: #f59e0b;
+            /* Amber */
+            --q3-bg: #fffbeb;
+            --q4-color: #94a3b8;
+            /* Slate */
+            --q4-bg: #f8fafc;
+
+            --card-bg: #ffffff;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        header {
+            padding: 1.5rem 2rem;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .filter-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .filter-toggle input {
+            cursor: pointer;
+        }
+
+        /* Task Input */
+        .input-container {
+            position: relative;
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .task-input-row {
+            display: flex;
+            gap: 0.5rem;
+            background: #fff;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .task-input-row:focus-within {
+            border-color: var(--q2-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        #taskInput {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 0.5rem 0.75rem;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .add-btn {
+            background: var(--text-main);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .add-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Placement Chooser */
+        .placement-chooser {
+            display: none;
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: var(--shadow-md);
+            z-index: 101;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chooser-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .chooser-btn {
+            border: 1px solid var(--border-color);
+            background: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            text-align: left;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .chooser-btn .label {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .chooser-btn .sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .chooser-btn:hover {
+            border-color: currentColor;
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .btn-q1 {
+            color: var(--q1-color);
+        }
+
+        .btn-q2 {
+            color: var(--q2-color);
+        }
+
+        .btn-q3 {
+            color: var(--q3-color);
+        }
+
+        .btn-q4 {
+            color: var(--q4-color);
+        }
+
+        /* Matrix Grid */
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 1px;
+            background: var(--border-color);
+            overflow: hidden;
+        }
+
+        .quadrant {
+            background: white;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .quadrant-header {
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .quadrant-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .task-count {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .task-list {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        /* Task Card */
+        .task-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            cursor: grab;
+            user-select: none;
+            position: relative;
+        }
+
+        .task-card:active {
+            cursor: grabbing;
+        }
+
+        .task-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .task-card.completed {
+            opacity: 0.5;
+        }
+
+        .task-card.completed .task-title {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-top: 2px;
+        }
+
+        .custom-checkbox {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .custom-checkbox:checked {
+            background-color: var(--text-main);
+            border-color: var(--text-main);
+        }
+
+        .custom-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .task-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-title {
+            font-size: 0.9375rem;
+            line-height: 1.4;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            word-break: break-word;
+            outline: none;
+        }
+
+        .task-meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 0.5rem;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .task-card:hover .task-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+
+        .action-btn:hover {
+            background: #f1f5f9;
+            color: var(--text-main);
+        }
+
+        .action-btn.delete:hover {
+            color: var(--q1-color);
+            background: var(--q1-bg);
+        }
+
+        /* Drag & Drop */
+        .task-card.dragging {
+            opacity: 0.4;
+            border: 2px dashed var(--text-muted);
+        }
+
+        .quadrant.drag-over {
+            background: #f8fafc;
+        }
+
+        .quadrant.drag-over .task-list {
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            main {
+                display: flex;
+                flex-direction: column;
+                overflow-y: auto;
+            }
+
+            .quadrant {
+                min-height: 300px;
+                border-bottom: 1px solid var(--border-color);
+            }
+        }
+
+        /* Colors for headers */
+        .q1 .quadrant-title {
+            color: var(--q1-color);
+        }
+
+        .q2 .quadrant-title {
+            color: var(--q2-color);
+        }
+
+        .q3 .quadrant-title {
+            color: var(--q3-color);
+        }
+
+        .q4 .quadrant-title {
+            color: var(--q4-color);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Print Styling */
+        @media print {
+            body {
+                background: white;
+                height: auto;
+                overflow: visible;
+            }
+
+            header,
+            main,
+            .input-container,
+            .task-actions {
+                display: none !important;
+            }
+
+            #printLayout {
+                display: block !important;
+                padding: 2rem;
+            }
+
+            .print-quadrant {
+                margin-bottom: 2rem;
+            }
+
+            .print-quadrant h2 {
+                font-size: 1.25rem;
+                border-bottom: 2px solid #000;
+                padding-bottom: 0.5rem;
+                margin-bottom: 1rem;
+                text-transform: uppercase;
+            }
+
+            .print-task {
+                padding: 0.5rem 0;
+                border-bottom: 1px solid #eee;
+                display: flex;
+                gap: 1rem;
+                align-items: baseline;
+            }
+
+            .print-task-title {
+                font-size: 1rem;
+            }
+
+            .print-task-done {
+                font-weight: bold;
+                min-width: 60px;
+                font-size: 0.8rem;
+                text-transform: uppercase;
+            }
+        }
+
+        #printLayout {
+            display: none;
+        }
+
+        .export-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f1f5f9;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .export-btn:hover {
+            background: #e2e8f0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="header-top">
+            <h1>Prioritizer</h1>
+            <div class="controls">
+                <label class="filter-toggle">
+                    <input type="checkbox" id="hideCompleted">
+                    <span>Hide completed</span>
+                </label>
+                <button class="export-btn" id="exportBtn" title="Export as outlined PDF">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Export PDF</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <div class="task-input-row">
+                <input type="text" id="taskInput" placeholder="I need to..." autocomplete="off">
+                <button class="add-btn" id="addBtn">Add</button>
+            </div>
+
+            <div class="placement-chooser" id="placementChooser">
+                <div class="chooser-grid">
+                    <button class="chooser-btn btn-q1" data-quadrant="q1">
+                        <span class="label">Q1: DO IT</span>
+                        <span class="sub">Urgent & Important</span>
+                    </button>
+                    <button class="chooser-btn btn-q2" data-quadrant="q2">
+                        <span class="label">Q2: SCHEDULE IT</span>
+                        <span class="sub">Important, not Urgent</span>
+                    </button>
+                    <button class="chooser-btn btn-q3" data-quadrant="q3">
+                        <span class="label">Q3: DELEGATE IT</span>
+                        <span class="sub">Urgent, not Important</span>
+                    </button>
+                    <button class="chooser-btn btn-q4" data-quadrant="q4">
+                        <span class="label">Q4: DELETE IT</span>
+                        <span class="sub">Not Urgent & Not Important</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="quadrant q1" id="q1" data-id="q1">
+            <div class="quadrant-header">
+                <span class="quadrant-title">Urgent & Important</span>
+                <span class="task-count" id="count-q1">0 tasks</span>
+            </div>
+            <div class="task-list" id="list-q1"></div>
+        </div>
+
+        <div class="quadrant q2" id="q2" data-id="q2">
+            <div class="quadrant-header">
+                <span class="quadrant-title">Not Urgent & Important</span>
+                <span class="task-count" id="count-q2">0 tasks</span>
+            </div>
+            <div class="task-list" id="list-q2"></div>
+        </div>
+
+        <div class="quadrant q3" id="q3" data-id="q3">
+            <div class="quadrant-header">
+                <span class="quadrant-title">Urgent & Not Important</span>
+                <span class="task-count" id="count-q3">0 tasks</span>
+            </div>
+            <div class="task-list" id="list-q3"></div>
+        </div>
+
+        <div class="quadrant q4" id="q4" data-id="q4">
+            <div class="quadrant-header">
+                <span class="quadrant-title">Not Urgent & Not Important</span>
+                <span class="task-count" id="count-q4">0 tasks</span>
+            </div>
+            <div class="task-list" id="list-q4"></div>
+        </div>
+    </main>
+
+    <div id="printLayout">
+        <h1>Task Summary - Eisenhower Matrix</h1>
+        <div id="print-q1" class="print-quadrant">
+            <h2>1) Urgent & Important</h2>
+            <div class="print-list"></div>
+        </div>
+        <div id="print-q2" class="print-quadrant">
+            <h2>2) Not Urgent & Important</h2>
+            <div class="print-list"></div>
+        </div>
+        <div id="print-q3" class="print-quadrant">
+            <h2>3) Urgent & Not Important</h2>
+            <div class="print-list"></div>
+        </div>
+        <div id="print-q4" class="print-quadrant">
+            <h2>4) Not Urgent & Not Important</h2>
+            <div class="print-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let state = {
+            tasks: [],
+            hideCompleted: false
+        };
+
+        const SEED_TASKS = [
+            { id: 1, title: 'Finish Matrix App', quadrant: 'q1', completed: false, created: new Date().toISOString() },
+            { id: 2, title: 'Weekly planning session', quadrant: 'q2', completed: false, created: new Date().toISOString() },
+            { id: 3, title: 'Check emails', quadrant: 'q3', completed: false, created: new Date().toISOString() },
+            { id: 4, title: 'Scroll social media', quadrant: 'q4', completed: true, created: new Date().toISOString() }
+        ];
+
+        // Core Elements
+        const taskInput = document.getElementById('taskInput');
+        const addBtn = document.getElementById('addBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const placementChooser = document.getElementById('placementChooser');
+        const hideCompletedToggle = document.getElementById('hideCompleted');
+        const quadrants = ['q1', 'q2', 'q3', 'q4'];
+
+        // Init
+        function init() {
+            const savedState = localStorage.getItem('eisenhower_tasks');
+            if (savedState) {
+                state = JSON.parse(savedState);
+            } else {
+                state.tasks = SEED_TASKS;
+                saveState();
+            }
+
+            hideCompletedToggle.checked = state.hideCompleted;
+            render();
+            setupEventListeners();
+        }
+
+        function saveState() {
+            localStorage.setItem('eisenhower_tasks', JSON.stringify(state));
+        }
+
+        function render() {
+            quadrants.forEach(q => {
+                const list = document.getElementById(`list-${q}`);
+                const printList = document.querySelector(`#print-${q} .print-list`);
+                const countLabel = document.getElementById(`count-${q}`);
+                const tasksInQuadrant = state.tasks.filter(t => t.quadrant === q);
+
+                let filteredTasks = tasksInQuadrant;
+                if (state.hideCompleted) {
+                    filteredTasks = tasksInQuadrant.filter(t => !t.completed);
+                }
+
+                list.innerHTML = '';
+                printList.innerHTML = '';
+
+                filteredTasks.forEach(task => {
+                    list.appendChild(createTaskCard(task));
+                });
+
+                // Populate print list (all tasks in quadrant for export)
+                tasksInQuadrant.forEach(task => {
+                    const item = document.createElement('div');
+                    item.className = 'print-task';
+                    item.innerHTML = `
+                        <span class="print-task-done">[${task.completed ? 'DONE' : '    '}]</span>
+                        <span class="print-task-title">${task.title}</span>
+                    `;
+                    printList.appendChild(item);
+                });
+
+                countLabel.innerText = `${tasksInQuadrant.length} task${tasksInQuadrant.length !== 1 ? 's' : ''}`;
+            });
+        }
+
+        function createTaskCard(task) {
+            const card = document.createElement('div');
+            card.className = `task-card ${task.completed ? 'completed' : ''}`;
+            card.draggable = true;
+            card.dataset.id = task.id;
+
+            const date = new Date(task.created);
+            const timeStr = date.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            card.innerHTML = `
+                <div class="checkbox-container">
+                    <input type="checkbox" class="custom-checkbox" ${task.completed ? 'checked' : ''}>
+                </div>
+                <div class="task-content">
+                    <div class="task-title" contenteditable="true" spellcheck="false">${task.title}</div>
+                    <div class="task-meta">${timeStr}</div>
+                </div>
+                <div class="task-actions">
+                    <button class="action-btn edit" title="Edit">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </button>
+                    <button class="action-btn delete" title="Delete">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                    </button>
+                </div>
+            `;
+
+            // Card Events
+            const checkbox = card.querySelector('.custom-checkbox');
+            checkbox.onchange = () => toggleTask(task.id);
+
+            const title = card.querySelector('.task-title');
+            title.onblur = () => updateTaskTitle(task.id, title.innerText);
+            title.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    title.blur();
+                }
+                if (e.key === 'Escape') {
+                    title.innerText = task.title;
+                    title.blur();
+                }
+            };
+
+            const editBtn = card.querySelector('.edit');
+            editBtn.onclick = () => {
+                title.focus();
+                // Select all text
+                const range = document.createRange();
+                range.selectNodeContents(title);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            };
+
+            const delBtn = card.querySelector('.delete');
+            delBtn.onclick = () => deleteTask(task.id);
+
+            // Drag Events
+            card.ondragstart = (e) => {
+                card.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', task.id);
+            };
+            card.ondragend = () => card.classList.remove('dragging');
+
+            return card;
+        }
+
+        // State Actions
+        function addTask(title, quadrant) {
+            const newTask = {
+                id: Date.now(),
+                title: title,
+                quadrant: quadrant,
+                completed: false,
+                created: new Date().toISOString()
+            };
+            state.tasks.push(newTask);
+            saveState();
+            render();
+
+            // UI Reset
+            taskInput.value = '';
+            closePlacementChooser();
+            taskInput.focus();
+        }
+
+        function toggleTask(id) {
+            const task = state.tasks.find(t => t.id == id);
+            if (task) {
+                task.completed = !task.completed;
+                saveState();
+                render();
+            }
+        }
+
+        function deleteTask(id) {
+            state.tasks = state.tasks.filter(t => t.id != id);
+            saveState();
+            render();
+        }
+
+        function updateTaskTitle(id, newTitle) {
+            const task = state.tasks.find(t => t.id == id);
+            if (task && newTitle.trim()) {
+                task.title = newTitle.trim();
+                saveState();
+            } else if (task) {
+                render(); // Restore if empty
+            }
+        }
+
+        function moveTask(id, newQuadrant) {
+            const task = state.tasks.find(t => t.id == id);
+            if (task) {
+                task.quadrant = newQuadrant;
+                saveState();
+                render();
+            }
+        }
+
+        // UI Helpers
+        function showPlacementChooser() {
+            if (taskInput.value.trim() === '') return;
+            placementChooser.style.display = 'block';
+        }
+
+        function closePlacementChooser() {
+            placementChooser.style.display = 'none';
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            taskInput.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    showPlacementChooser();
+                }
+                if (e.key === 'Escape') {
+                    closePlacementChooser();
+                }
+            };
+
+            addBtn.onclick = showPlacementChooser;
+
+            exportBtn.onclick = () => {
+                window.print();
+            };
+
+            document.querySelectorAll('.chooser-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const q = btn.dataset.quadrant;
+                    addTask(taskInput.value, q);
+                };
+            });
+
+            // Click outside to close chooser
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.input-container')) {
+                    closePlacementChooser();
+                }
+            });
+
+            hideCompletedToggle.onchange = (e) => {
+                state.hideCompleted = e.target.checked;
+                saveState();
+                render();
+            };
+
+            // Drag and Drop for Quadrants
+            document.querySelectorAll('.quadrant').forEach(q => {
+                q.ondragover = (e) => {
+                    e.preventDefault();
+                    q.classList.add('drag-over');
+                };
+
+                q.ondragleave = () => {
+                    q.classList.remove('drag-over');
+                };
+
+                q.ondrop = (e) => {
+                    e.preventDefault();
+                    q.classList.remove('drag-over');
+                    const id = e.dataTransfer.getData('text/plain');
+                    moveTask(id, q.dataset.id);
+                };
+            });
+
+            // Keyboard Shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Quick Move 1-4 when a card is hovered or focused if we wanted to be fancy,
+                // but let's stick to global shortcuts if any.
+                // For now, let's keep it simple.
+            });
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
