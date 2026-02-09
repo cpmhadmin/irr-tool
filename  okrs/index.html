@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Management Focus Tree</title>
+
+    <!-- Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Libraries -->
+    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+
+    <style>
+        :root {
+            /* Color Palette - Premium Dark */
+            --bg-main: #0B0F15;
+            --bg-surface: #131B26;
+            --bg-surface-hover: #1C2635;
+            --bg-card: #151E2B;
+
+            --border-subtle: #2A3649;
+            --border-active: #3E516E;
+
+            --text-primary: #FFFFFF;
+            --text-secondary: #94A3B8;
+            --text-tertiary: #64748B;
+            --text-dim: #94A3B8;
+
+            --accent-primary: #3B82F6;
+            --accent-glow: rgba(59, 130, 246, 0.4);
+
+            --success: #10B981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+
+            --warning: #F59E0B;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+
+            --danger: #EF4444;
+            --danger-bg: rgba(239, 68, 68, 0.1);
+
+            --neutral: #64748B;
+            --neutral-bg: rgba(100, 116, 139, 0.1);
+
+            /* Typography */
+            --font-heading: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+
+            /* Spacing & Radius */
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+
+            --header-height: 72px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-body);
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+            /* Main app handles scrolling */
+            height: 100vh;
+        }
+
+        /* Header */
+        .app-header {
+            height: var(--header-height);
+            background: rgba(11, 15, 21, 0.85);
+            /* Glass effect */
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-primary), #60A5FA);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 20px;
+            color: white;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .logo h1 {
+            font-family: var(--font-heading);
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+        }
+
+        /* Form Elements */
+        input,
+        select {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper input {
+            padding-right: 32px;
+            width: 240px;
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 10px;
+            color: var(--text-tertiary);
+            pointer-events: none;
+        }
+
+        /* Viewport */
+        .viewport {
+            margin-top: var(--header-height);
+            height: calc(100vh - var(--header-height));
+            overflow: auto;
+            padding: 32px;
+        }
+
+        .forest {
+            display: flex;
+            flex-direction: row;
+            gap: 32px;
+            min-width: fit-content;
+            padding-bottom: 80px;
+            padding-left: 20px;
+        }
+
+        /* Node Wrap - Animation Support */
+        .node-wrap {
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Node Styles */
+        .node-card {
+            background: rgba(21, 30, 43, 0.7);
+            /* More transparent for glass effect */
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-lg);
+            width: 420px;
+            padding: 20px;
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .node-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .node-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.6), 0 0 20px rgba(59, 130, 246, 0.1);
+        }
+
+        .node-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2D3748, #1A202C);
+            border: 2px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-family: var(--font-heading);
+            color: var(--text-secondary);
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .person-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .person-name {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 4px;
+        }
+
+        .person-role {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.3;
+        }
+
+        .dept-badge {
+            display: inline-flex;
+            font-size: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+            width: fit-content;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .scope-link {
+            margin-left: auto;
+            font-size: 12px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .scope-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        /* Objectives List */
+        .objectives-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .objective-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            transition: transform 0.1s;
+        }
+
+        .objective-item:hover {
+            transform: translateY(-1px);
+            background: var(--bg-surface-hover);
+        }
+
+        .health-indicator {
+            width: 5px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .health-green {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success-bg);
+        }
+
+        .health-yellow {
+            background: var(--warning);
+            box-shadow: 0 0 8px var(--warning-bg);
+        }
+
+        .health-red {
+            background: var(--danger);
+            box-shadow: 0 0 8px var(--danger-bg);
+        }
+
+        .health-gray {
+            background: var(--neutral);
+        }
+
+        .obj-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .obj-text {
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .obj-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 11px;
+            color: var(--text-tertiary);
+            flex-wrap: wrap;
+        }
+
+        .status-pill {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 1px 6px;
+        }
+
+        .obj-link {
+            color: var(--accent-primary);
+            text-decoration: none;
+        }
+
+        .obj-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Dashboard Bar */
+        .dashboard-bar {
+            display: flex;
+            gap: 24px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            padding: 8px 16px;
+            border-radius: 99px;
+            font-size: 12px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 2px 8px;
+            border-radius: 99px;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .stat-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .stat-item.active {
+            background: rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.1);
+        }
+
+        .stat-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        /* Search Highlighting */
+        mark {
+            background: rgba(59, 130, 243, 0.4);
+            color: white;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        /* Children Container */
+        .children-container {
+            margin-left: 20px;
+            margin-top: 12px;
+            padding-left: 20px;
+            border-left: 2px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            max-height: 5000px;
+            opacity: 1;
+            transition: max-height 0.5s ease-in-out, opacity 0.3s ease;
+            overflow: hidden;
+        }
+
+        .children-container.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        /* Branch connector */
+        .children-container .node-wrap::before {
+            content: '';
+            position: absolute;
+            top: 45px;
+            /* Adjusted for larger card */
+            /* Align with avatar/header center */
+            left: -22px;
+            /* Reach back to the border */
+            width: 20px;
+            height: 2px;
+            background: var(--border-subtle);
+        }
+
+        /* Loading */
+        .loading-state {
+            width: 100%;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-tertiary);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Reports Toggle */
+        .reports-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dim);
+            transition: color 0.2s;
+            user-select: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .reports-toggle:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .report-names {
+            font-weight: 400;
+            opacity: 0.7;
+            font-style: italic;
+            margin-left: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-header {
+                height: auto;
+                flex-direction: column;
+                padding: 16px;
+                gap: 16px;
+            }
+
+            .controls {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .viewport {
+                margin-top: 120px;
+                padding: 16px;
+            }
+
+            .node-card {
+                width: 100%;
+                min-width: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root">
+        <header class="app-header">
+            <div class="logo">
+                <div class="logo-icon">M</div>
+                <h1>Management Tree</h1>
+            </div>
+
+            <div id="health-dashboard" class="dashboard-bar">
+                <!-- Dashboard stats will be injected here -->
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label for="quarter-select">Quarter</label>
+                    <div class="select-wrapper">
+                        <select id="quarter-select">
+                            <option value="ALL">All Quarters</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="search-input">Search</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="search-input" placeholder="Search people, objectives...">
+                        <span class="search-icon">
+                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="viewport">
+            <div id="tree-container" class="forest">
+                <!-- Tree nodes will be rendered here -->
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading data sources...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- App Logic -->
+    <script>
+        /**
+         * Management Tree App
+         * Handles data fetching, parsing, and rendering.
+         */
+
+        const DATA_SRC = {
+            objectives: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRFRCVzRylndg7gn9aNq385DBb-_QzIo1tnI0mTvIUxsFsHDz7KYtAmbP30phvsJZHU_S7yrVTtYz7l/pub?gid=0&single=true&output=csv',
+            people: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRFRCVzRylndg7gn9aNq385DBb-_QzIo1tnI0mTvIUxsFsHDz7KYtAmbP30phvsJZHU_S7yrVTtYz7l/pub?gid=1261869717&single=true&output=csv'
+        };
+
+        class App {
+            constructor() {
+                this.state = {
+                    people: {}, // Map<Name, Person>
+                    roots: [], // Array<Name>
+                    quarters: new Set(),
+                    filters: {
+                        quarter: 'ALL',
+                        search: '',
+                        health: 'ALL' // 'green', 'yellow', 'red', 'gray', or 'ALL'
+                    },
+                    dataLoaded: false
+                };
+
+                this.els = {
+                    tree: document.getElementById('tree-container'),
+                    quarterSelect: document.getElementById('quarter-select'),
+                    searchInput: document.getElementById('search-input'),
+                    dashboard: document.getElementById('health-dashboard')
+                };
+
+                this.init();
+            }
+
+            async init() {
+                console.log('App Initializing...');
+
+                if (window.location.protocol === 'file:') {
+                    this.showProtocolWarning();
+                    return;
+                }
+
+                await this.loadData();
+                this.initControls();
+                this.render();
+            }
+
+            showProtocolWarning() {
+                this.els.tree.innerHTML = `
+                    <div style="
+                        max-width: 600px;
+                        margin: 60px auto;
+                        padding: 40px;
+                        background: rgba(239, 68, 68, 0.1);
+                        border: 1px solid rgba(239, 68, 68, 0.2);
+                        border-radius: 16px;
+                        text-align: center;
+                        backdrop-filter: blur(12px);
+                    ">
+                        <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                        <h2 style="font-family: var(--font-heading); margin-bottom: 16px; color: #EF4444;">Local Server Required</h2>
+                        <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;">
+                            Modern browsers block data fetching when opening HTML files directly (<code>file://</code> protocol) for security.
+                        </p>
+                        <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; font-size: 14px;">
+                            <p style="margin-top: 0; font-weight: 600;">How to run the app:</p>
+                            <ol style="margin-bottom: 0; padding-left: 20px;">
+                                <li>Look for <b>"Management Tree.command"</b> in your project folder.</li>
+                                <li>Double-click it to start the local server.</li>
+                                <li>The app will open automatically in your browser.</li>
+                            </ol>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async loadData() {
+                try {
+                    const [peopleData, objectivesData] = await Promise.all([
+                        this.fetchCsv(DATA_SRC.people),
+                        this.fetchCsv(DATA_SRC.objectives)
+                    ]);
+
+                    console.log('Data Fetched', { peopleData, objectivesData });
+
+                    this.processData(peopleData, objectivesData);
+                    this.state.dataLoaded = true;
+                } catch (err) {
+                    console.error('Failed to load data', err);
+                    this.els.tree.innerHTML = `<div class="error">Failed to load data: ${err.message}</div>`;
+                }
+            }
+
+            fetchCsv(url) {
+                return new Promise((resolve, reject) => {
+                    Papa.parse(url, {
+                        download: true,
+                        header: true,
+                        skipEmptyLines: true,
+                        transformHeader: (h) => h.trim(), // Critical: Remove whitespace from headers
+                        complete: (results) => resolve(results.data),
+                        error: (err) => reject(err)
+                    });
+                });
+            }
+
+            processData(peopleRows, objectiveRows) {
+                const people = {};
+                const allQuarters = new Set();
+
+                // 1. Process People
+                peopleRows.forEach(row => {
+                    // Helper to get value case-insensitively or just loosely
+                    const name = (row['Team Member'] || '').trim();
+                    if (!name) return;
+
+                    people[name] = {
+                        name: name,
+                        department: row['Department'] || '',
+                        reportsTo: (row['Reports To'] || '').trim(),
+                        role: row['Role (optional)'] || '',
+                        active: (row['Active (Y/N)'] || '').toUpperCase() === 'Y',
+                        jobScopeLink: row['Current Job Scope'] || '',
+                        objectives: [],
+                        directReports: []
+                    };
+                });
+
+                // 2. Link Hierarchy
+                Object.values(people).forEach(p => {
+                    const managerName = p.reportsTo;
+                    if (managerName && people[managerName]) {
+                        people[managerName].directReports.push(p.name);
+                    }
+                });
+
+                // 3. Process Objectives
+                objectiveRows.forEach(row => {
+                    const ownerName = (row['Team Member'] || '').trim();
+
+                    // Only add objectives if the person exists in our list
+                    if (!people[ownerName]) return;
+
+                    const quarter = row['Quarter'] || '';
+                    if (quarter) allQuarters.add(quarter);
+
+                    people[ownerName].objectives.push({
+                        id: row['Objective ID'] || Math.random().toString(36),
+                        text: row['Objective'] || 'Untitled Objective',
+                        status: row['Status'] || 'Pending',
+                        health: row['Health'] || 'Gray',
+                        confidence: row['Confidence'] || '',
+                        lastUpdated: row['Last Updated'] || '',
+                        link: row['Link'] || '',
+                        quarter: quarter
+                    });
+                });
+
+                // 4. Determine Roots 
+                // A root is someone who:
+                // - Has no manager specified OR
+                // - Their manager is NOT in the dataset
+                const roots = Object.values(people)
+                    .filter(p => !p.reportsTo || !people[p.reportsTo])
+                    .map(p => p.name);
+
+                this.state.people = people;
+                this.state.roots = roots;
+                this.state.quarters = Array.from(allQuarters).sort().reverse();
+
+                // Update Quarter Select options
+                this.updateQuarterDropdown();
+            }
+
+            updateQuarterDropdown() {
+                const select = this.els.quarterSelect;
+                select.innerHTML = '<option value="ALL">All Quarters</option>';
+                this.state.quarters.forEach(q => {
+                    const opt = document.createElement('option');
+                    opt.value = q;
+                    opt.textContent = q;
+                    select.appendChild(opt);
+                });
+            }
+
+            initControls() {
+                this.els.quarterSelect.addEventListener('change', (e) => {
+                    this.state.filters.quarter = e.target.value;
+                    this.render();
+                });
+
+                this.els.searchInput.addEventListener('input', (e) => {
+                    this.state.filters.search = e.target.value.toLowerCase();
+                    this.render();
+                });
+
+                // Dashboard delegation for clicks
+                this.els.dashboard.addEventListener('click', (e) => {
+                    const statItem = e.target.closest('.stat-item');
+                    if (statItem) {
+                        const healthType = statItem.dataset.health;
+                        if (this.state.filters.health === healthType) {
+                            this.state.filters.health = 'ALL';
+                        } else {
+                            this.state.filters.health = healthType;
+                        }
+                        this.render();
+                    }
+                });
+            }
+
+            // --- Rendering ---
+
+            render() {
+                const container = this.els.tree;
+                container.innerHTML = ''; // Clear previous
+
+                if (!this.state.dataLoaded) return;
+
+                this.updateDashboard();
+
+                this.state.roots.forEach(rootName => {
+                    const node = this.renderNode(rootName);
+                    if (node) {
+                        container.appendChild(node);
+                    }
+                });
+            }
+
+            updateDashboard() {
+                const stats = { green: 0, yellow: 0, red: 0, gray: 0 };
+                const { quarter } = this.state.filters;
+
+                Object.values(this.state.people).forEach(p => {
+                    p.objectives.forEach(obj => {
+                        if (quarter === 'ALL' || obj.quarter === quarter) {
+                            const h = obj.health.toLowerCase();
+                            if (h === 'green') stats.green++;
+                            else if (h === 'yellow') stats.yellow++;
+                            else if (h === 'red') stats.red++;
+                            else stats.gray++;
+                        }
+                    });
+                });
+
+                this.els.dashboard.innerHTML = `
+                    <div class="stat-item ${this.state.filters.health === 'green' ? 'active' : ''}" data-health="green">
+                        <div class="stat-dot health-green"></div> Green: ${stats.green}
+                    </div>
+                    <div class="stat-item ${this.state.filters.health === 'yellow' ? 'active' : ''}" data-health="yellow">
+                        <div class="stat-dot health-yellow"></div> Yellow: ${stats.yellow}
+                    </div>
+                    <div class="stat-item ${this.state.filters.health === 'red' ? 'active' : ''}" data-health="red">
+                        <div class="stat-dot health-red"></div> Red: ${stats.red}
+                    </div>
+                    <div class="stat-item ${this.state.filters.health === 'gray' ? 'active' : ''}" data-health="gray">
+                        <div class="stat-dot health-gray"></div> Other: ${stats.gray}
+                    </div>
+                `;
+            }
+
+            // Returns DOM Element or null if filtered out
+            renderNode(personName) {
+                const person = this.state.people[personName];
+                if (!person) return null;
+
+                const { quarter, search, health } = this.state.filters;
+
+                // Filter Objectives
+                const shownObjectives = person.objectives.filter(obj => {
+                    const qMatch = quarter === 'ALL' || obj.quarter === quarter;
+                    const hMatch = health === 'ALL' || obj.health.toLowerCase() === health;
+                    const sMatch = !search ||
+                        obj.text.toLowerCase().includes(search) ||
+                        obj.status.toLowerCase().includes(search);
+                    return qMatch && hMatch && sMatch;
+                });
+
+                // Check if person matches
+                const personMatches = !search ||
+                    person.name.toLowerCase().includes(search) ||
+                    person.role.toLowerCase().includes(search) ||
+                    person.department.toLowerCase().includes(search);
+
+                // Process Children Recursively
+                const childrenNodes = [];
+                person.directReports.forEach(childName => {
+                    const childNode = this.renderNode(childName);
+                    if (childNode) childrenNodes.push(childNode);
+                });
+
+                const hasMatch = personMatches || shownObjectives.length > 0 || childrenNodes.length > 0;
+
+                if (!hasMatch) return null;
+
+                // Create Card DOM
+                const cardWrap = document.createElement('div');
+                cardWrap.className = 'node-wrap';
+
+                const nodeEl = document.createElement('div');
+                nodeEl.className = 'node-card';
+
+                // Highlight text if searching
+                const highlightedName = this.highlightText(person.name, search);
+                const highlightedRole = this.highlightText(person.role, search);
+                const highlightedDept = this.highlightText(person.department, search);
+
+                // Header
+                nodeEl.innerHTML = `
+                    <div class="node-header">
+                        <div class="avatar">${this.getInitials(person.name)}</div>
+                        <div class="person-info">
+                            <div class="person-name">${highlightedName}</div>
+                            <div class="person-role">${highlightedRole}</div>
+                            <span class="dept-badge">${highlightedDept}</span>
+                        </div>
+                        ${person.jobScopeLink ? `<a href="${person.jobScopeLink}" target="_blank" class="scope-link">Scope ↗</a>` : ''}
+                    </div>
+                `;
+
+                // Objectives
+                if (shownObjectives.length > 0) {
+                    const objList = document.createElement('div');
+                    objList.className = 'objectives-list';
+                    shownObjectives.forEach(obj => {
+                        const el = document.createElement('div');
+                        el.className = 'objective-item';
+
+                        const highlightedText = this.highlightText(obj.text, search);
+                        const highlightedStatus = this.highlightText(obj.status, search);
+
+                        el.innerHTML = `
+                            <div class="health-indicator ${this.getHealthClass(obj.health)}"></div>
+                            <div class="obj-content">
+                                <div class="obj-text">${highlightedText}</div>
+                                <div class="obj-meta">
+                                    <span class="status-pill">${highlightedStatus}</span>
+                                    ${obj.quarter ? `<span>${obj.quarter}</span>` : ''}
+                                    ${obj.confidence ? `<span>Conf: ${obj.confidence}/5</span>` : ''}
+                                    ${obj.link ? `<a href="${obj.link}" target="_blank" class="obj-link">Link ↗</a>` : ''}
+                                </div>
+                            </div>
+                        `;
+                        objList.appendChild(el);
+                    });
+                    nodeEl.appendChild(objList);
+                } else if (personMatches && quarter !== 'ALL') {
+                    const empty = document.createElement('div');
+                    empty.style.color = 'var(--text-tertiary)';
+                    empty.style.fontSize = '12px';
+                    empty.style.marginTop = '10px';
+                    empty.textContent = 'No objectives found for this period.';
+                    nodeEl.appendChild(empty);
+                }
+
+                cardWrap.appendChild(nodeEl);
+
+                // Children
+                if (childrenNodes.length > 0) {
+                    // Toggle Button
+                    const childrenNames = person.directReports.map(name => {
+                        const p = this.state.people[name];
+                        return p ? p.name : name;
+                    }).join(', ');
+
+                    const toggle = document.createElement('div');
+                    toggle.className = 'reports-toggle';
+                    toggle.innerHTML = `<span>►</span> Reports (${person.directReports.length}): <span class="report-names">${childrenNames}</span>`;
+
+                    const childrenContainer = document.createElement('div');
+                    childrenContainer.className = 'children-container collapsed'; // Default to collapsed
+
+                    toggle.onclick = (e) => {
+                        e.stopPropagation();
+                        const isCollapsed = childrenContainer.classList.toggle('collapsed');
+                        toggle.querySelector('span').textContent = isCollapsed ? '►' : '▼';
+                    };
+
+                    // Auto-expand only if searching OR filtering by health
+                    if (search || health !== 'ALL') {
+                        childrenContainer.classList.remove('collapsed');
+                        toggle.querySelector('span').textContent = '▼';
+                    }
+
+                    nodeEl.appendChild(toggle);
+
+                    childrenNodes.forEach(c => childrenContainer.appendChild(c));
+                    cardWrap.appendChild(childrenContainer);
+                }
+
+                return cardWrap;
+            }
+
+            highlightText(text, query) {
+                if (!query || !text) return text;
+                const regex = new RegExp(`(${query})`, 'gi');
+                return text.replace(regex, '<mark>$1</mark>');
+            }
+
+            getInitials(name) {
+                return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+            }
+
+            getHealthClass(h) {
+                h = (h || '').toLowerCase();
+                if (h === 'green') return 'health-green';
+                if (h === 'yellow') return 'health-yellow';
+                if (h === 'red') return 'health-red';
+                return 'health-gray';
+            }
+        }
+
+        // Start
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = new App();
+        });
+    </script>
+</body>
+
+</html>
