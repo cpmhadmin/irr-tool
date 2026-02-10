@@ -1,7 +1,0 @@
-flask
-flask-cors
-mysql-connector-python
-psycopg2-binary
-PyJWT
-python-dotenv
-gunicorn
