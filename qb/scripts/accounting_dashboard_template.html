@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>QB GL Python Print</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- PapaParse for CSV -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        /* Reusing the aesthetic from reference */
+        :root {
+            --bg-gradient: radial-gradient(circle at top, #0f172a, #020617);
+            --card-bg: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.9));
+            --card-border: rgba(148, 163, 184, 0.35);
+            --text-main: #f7fafc;
+            --text-muted: #a0aec0;
+            --accent-color: #4fd1c5;
+            --accent-gradient: linear-gradient(135deg, #4fd1c5, #63b3ed);
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            color: var(--text-main);
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 32px 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .header p {
+            margin: 4px 0 0;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            background: rgba(72, 187, 120, 0.12);
+            color: #9ae6b4;
+            border: 1px solid rgba(72, 187, 120, 0.35);
+        }
+
+        .badge-warn {
+            background: rgba(236, 201, 75, 0.12);
+            color: #ecc94b;
+            border: 1px solid rgba(236, 201, 75, 0.35);
+        }
+
+        /* CARD */
+        .card {
+            background:
+                radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent),
+                var(--card-bg);
+            border-radius: 18px;
+            border: 1px solid var(--card-border);
+            padding: 0;
+            /* padding handled inside for table wrapper */
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(18px);
+            margin-bottom: 24px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+            /* Fixed height for table scrolling */
+        }
+
+        /* SEARCH BAR */
+        .search-container {
+            padding: 16px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .search-input-wrapper {
+            flex: 1;
+        }
+
+        .search-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: rgba(15, 23, 42, 0.8);
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        select.search-input {
+            width: auto;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0aec0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 40px;
+            cursor: pointer;
+        }
+
+        .search-btn {
+            padding: 0 24px;
+            height: 42px;
+            border-radius: 999px;
+            border: none;
+            background: var(--accent-gradient);
+            color: #0b1120;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(79, 209, 197, 0.3);
+            transition: transform 0.1s;
+        }
+
+        .search-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* TABLE */
+        .table-wrapper {
+            flex: 1;
+            overflow: auto;
+            min-height: 0;
+            position: relative;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            table-layout: fixed;
+            /* Important for text clipping */
+        }
+
+        th,
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(45, 55, 72, 0.5);
+            text-align: left;
+            vertical-align: middle;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            background: rgba(15, 23, 42, 0.98);
+            z-index: 2;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th:hover {
+            color: var(--accent-color);
+        }
+
+        td {
+            color: #e2e8f0;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(79, 209, 197, 0.07);
+        }
+
+        /* TOOLTIP */
+        .row-tooltip {
+            position: fixed;
+            display: none;
+            background: rgba(15, 23, 42, 0.98);
+            border: 1px solid var(--accent-color);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            width: 350px;
+            backdrop-filter: blur(12px);
+            font-size: 13px;
+            color: #fff;
+            pointer-events: none;
+        }
+
+        .tooltip-row {
+            display: flex;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 4px;
+            gap: 12px;
+        }
+
+        .tooltip-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .tooltip-label {
+            color: var(--text-muted);
+            width: 130px;
+            flex-shrink: 0;
+            font-weight: 600;
+        }
+
+        .tooltip-val {
+            color: #fff;
+            word-break: break-word;
+            white-space: normal;
+        }
+
+        /* LOADING */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(2, 6, 23, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(79, 209, 197, 0.3);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Utility for numeric columns */
+        .text-right {
+            text-align: right;
+        }
+
+        .font-mono {
+            font-family: monospace;
+        }
+
+        .text-accent {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background-color: #1a202c;
+            margin: 10% auto;
+            padding: 30px;
+            border: 1px solid var(--card-border);
+            width: 90%;
+            max-width: 600px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            position: relative;
+            color: var(--text-primary);
+        }
+
+        .close-btn {
+            color: var(--text-muted);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 20px;
+        }
+
+        .close-btn:hover,
+        .close-btn:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .workflow-box {
+            background: rgba(254, 178, 178, 0.1);
+            border: 1px solid rgba(254, 178, 178, 0.3);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .workflow-box ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .workflow-box li {
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 10px;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: var(--accent-color);
+        }
+
+        .modal-content ul {
+            padding-left: 20px;
+            color: var(--text-muted);
+        }
+
+        .modal-content li {
+            margin-bottom: 6px;
+        }
+
+        .modal-content strong {
+            color: #edf2f7;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <div id="loading-msg" style="font-size: 14px; color: var(--text-muted);">Fetching Accounting Data...</div>
+    </div>
+
+    <!-- Hidden tooltip element -->
+    <div id="tooltip" class="row-tooltip"></div>
+
+    <div class="app-container">
+
+        <header class="header">
+            <div>
+                <h1>QB GL Python Print</h1>
+                <p>Accounting Data Explorer</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button id="user-guide-btn" style="
+                    background: transparent; 
+                    border: 1px solid var(--accent-color); 
+                    color: var(--accent-color); 
+                    padding: 6px 12px; 
+                    border-radius: 6px; 
+                    font-size: 11px; 
+                    font-weight: 600; 
+                    cursor: pointer; 
+                    letter-spacing: 0.05em;
+                    transition: all 0.2s;">
+                    USER GUIDE
+                </button>
+                <button id="export-pdf-btn" style="
+                    background: var(--accent-gradient); 
+                    border: none; 
+                    color: #0b1120;
+                    padding: 6px 12px; 
+                    border-radius: 6px; 
+                    font-size: 11px; 
+                    font-weight: 600; 
+                    cursor: pointer; 
+                    letter-spacing: 0.05em;
+                    box-shadow: 0 4px 12px rgba(79, 209, 197, 0.3);
+                    transition: transform 0.1s;">
+                    EXPORT REPORT
+                </button>
+                <div id="connection-status" class="badge" style="background: rgba(160, 174, 192, 0.2); color: #a0aec0;">
+                    Connecting...
+                </div>
+            </div>
+        </header>
+
+        <div class="card">
+            <div class="search-container">
+                <!-- Date Range -->
+                <div class="filter-group">
+                    <label>Date Range</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="date" id="filter-date-start" class="search-input" style="width: 130px;" />
+                        <input type="date" id="filter-date-end" class="search-input" style="width: 130px;" />
+                    </div>
+                </div>
+
+                <!-- Specific Filters -->
+                <div class="filter-group">
+                    <label>Class</label>
+                    <input type="text" id="filter-class" class="search-input" list="class-options"
+                        placeholder="All Classes" style="width: 160px;" />
+                    <datalist id="class-options"></datalist>
+                </div>
+
+                <div class="filter-group">
+                    <label>Account</label>
+                    <input type="text" id="filter-account" class="search-input" list="account-options"
+                        placeholder="All Accounts" style="width: 160px;" />
+                    <datalist id="account-options"></datalist>
+                </div>
+
+                <div class="filter-group">
+                    <label>Type</label>
+                    <input type="text" id="filter-type" class="search-input" list="type-options" placeholder="All Types"
+                        style="width: 140px;" />
+                    <datalist id="type-options"></datalist>
+                </div>
+
+                <div class="filter-group">
+                    <label>Category</label>
+                    <input type="text" id="filter-category" class="search-input" list="category-options"
+                        placeholder="All" style="width: 130px;" />
+                    <datalist id="category-options"></datalist>
+                </div>
+
+                <div class="filter-group">
+                    <label>Master Vertical</label>
+                    <input type="text" id="filter-master" class="search-input" list="master-vertical-options"
+                        placeholder="All" style="width: 130px;" />
+                    <datalist id="master-vertical-options"></datalist>
+                </div>
+
+                <div class="filter-group">
+                    <label>Name / Desc</label>
+                    <input type="text" id="filter-name" class="search-input" placeholder="Search Name..."
+                        style="width: 160px;" />
+                </div>
+
+                <button id="reset-btn" class="search-btn"
+                    style="background: rgba(255,255,255,0.1); margin-top: 18px;">Reset</button>
+
+                <div style="margin-left: auto; display:flex; flex-direction:column; align-items:flex-end;">
+                    <div style="font-size: 12px; color: var(--text-muted);"><span id="row-count">0</span> rows</div>
+                </div>
+            </div>
+
+            <style>
+                .filter-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+
+                .filter-group label {
+                    font-size: 11px;
+                    color: var(--text-muted);
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    margin-left: 2px;
+                }
+            </style>
+
+            <div class="table-wrapper">
+                <table id="data-table">
+                    <!-- Column widths defined here to enforce clipping -->
+                    <colgroup>
+                        <col style="width: 100px;"> <!-- Date -->
+                        <col style="width: 120px;"> <!-- Type -->
+                        <col style="width: 200px;"> <!-- Name -->
+                        <col style="width: 150px;"> <!-- Class (Clipped) -->
+                        <col style="width: 250px;"> <!-- Memo (Clipped) -->
+                        <col style="width: 200px;"> <!-- Account (Clipped) -->
+                        <col style="width: 130px;"> <!-- Category -->
+                        <col style="width: 140px;"> <!-- Master Vert -->
+                        <col style="width: 120px;"> <!-- Amount -->
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <!-- Headers injected via JS -->
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Rows injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Financial Statements (P&L and Balance Sheet) -->
+        <div class="summary-tables-grid">
+            <div class="card" style="height: auto; min-height: 400px; padding: 0;">
+                <div style="padding: 16px; border-bottom: 1px solid var(--card-border);">
+                    <h3 style="margin: 0; font-size: 14px;">Profit & Loss Statement</h3>
+                </div>
+                <div class="table-wrapper">
+                    <table id="pnl-summary-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 70%;">Metric</th>
+                                <th style="width: 30%; text-align: right;">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pnl-summary-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="height: auto; min-height: 400px; padding: 0;">
+                <div style="padding: 16px; border-bottom: 1px solid var(--card-border);">
+                    <h3 style="margin: 0; font-size: 14px;">Balance Sheet</h3>
+                </div>
+                <div class="table-wrapper">
+                    <table id="bs-summary-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 70%;">Item</th>
+                                <th style="width: 30%; text-align: right;">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bs-summary-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Tables -->
+        <div class="summary-tables-grid">
+            <div class="card" style="height: auto; min-height: 400px; padding: 0;">
+                <div style="padding: 16px; border-bottom: 1px solid var(--card-border);">
+                    <h3 style="margin: 0; font-size: 14px;">Total by Class</h3>
+                </div>
+                <div class="table-wrapper">
+                    <table id="class-summary-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 70%;">Class</th>
+                                <th style="width: 30%; text-align: right;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="class-summary-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="height: auto; min-height: 400px; padding: 0;">
+                <div style="padding: 16px; border-bottom: 1px solid var(--card-border);">
+                    <h3 style="margin: 0; font-size: 14px;">Total by Account</h3>
+                </div>
+                <div class="table-wrapper">
+                    <table id="account-summary-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 70%;">Account</th>
+                                <th style="width: 30%; text-align: right;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="account-summary-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .summary-tables-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .summary-tables-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    <!-- Embedded Data Block -->
+    <script id="local-csv-data" type="text/csv">__CSV_DATA_PLACEHOLDER__</script>
+
+    <script>
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRPUWy4CIzQ9uGRb8N4MuZC6lI93aSfnzm5v03WMIFVRYK6CFEaViqq8DrOVyyHE7js_L4ByRHMJHKh/pub?gid=491606184&single=true&output=csv";
+
+        // Read from the data script tag
+        const LOCAL_CSV_DATA = document.getElementById('local-csv-data') ? document.getElementById('local-csv-data').textContent : '';
+
+        // CATEGORY MAPPING
+        const categoryMap = {
+            'Banking': 'Accounting',
+            'Funding': 'Balance Sheet', // Standalone
+            'Accounting': 'Accounting',
+            'Digital Distro Income': 'Income',
+            'Asset': 'Assets', // Balance Sheet
+            'Project COGS': 'COGS',
+            'Expenses': 'Expenses',
+            'D2C Physical Income': 'Income',
+            'Income': 'Income',
+            'Royalties': 'Royalties',
+            'Transfers': 'Accounting',
+            'Compensation': 'Compensation',
+            'Income Distro OpEx': 'Income_Contra', // Special handling
+            'Freight COGS': 'Freight COGS',
+            'Physical Distro Income': 'Income',
+            'Sync Income': 'Income',
+            'Income Reserves': 'Income',
+            'Insurance': 'Expenses',
+            'Other Income': 'Income',
+            'Income Returns': 'Income_Contra', // Special handling
+            'Retained Earnings': 'Equity', // Balance Sheet
+            'PRO Income': 'Income'
+        };
+
+        function calculateFinancials(data) {
+            let financials = {
+                Income: 0,
+                COGS: 0,
+                FreightCOGS: 0,
+                Royalties: 0,
+                Expenses: 0,
+                Compensation: 0,
+                Assets: 0,
+                Liabilities: 0,
+                Equity: 0,
+                Funding: 0
+            };
+
+            data.forEach(row => {
+                const amt = parseFloat((row['Amount'] || '0').replace(/,/g, ''));
+                if (isNaN(amt)) return;
+
+                const cat = row['Category'] || '';
+                const parent = categoryMap[cat];
+
+                if (!parent) return; // Skip unmapped or unknown
+
+                // Expenses in CSV are positive values (checked via grep).
+                // Logic: 
+                // Income types -> Add
+                // Expense types -> Add (we will subtract in P&L calc)
+                // Contra Income -> Add (we will subtract from Income)
+
+                // However, 'Amount' in CSV for expenses is positive.
+                // We typically sum them up as positive numbers and subtract in the final P&L view.
+
+                switch (parent) {
+                    case 'Income':
+                        financials.Income += amt;
+                        break;
+                    case 'Income_Contra':
+                        financials.Income -= amt; // Deduct from Income
+                        break;
+                    case 'COGS':
+                        financials.COGS += amt;
+                        break;
+                    case 'Freight COGS':
+                        financials.FreightCOGS += amt;
+                        break;
+                    case 'Royalties':
+                        financials.Royalties += amt;
+                        break;
+                    case 'Expenses':
+                        financials.Expenses += amt;
+                        break;
+                    case 'Compensation':
+                        financials.Compensation += amt;
+                        break;
+                    case 'Assets':
+                        financials.Assets += amt;
+                        break;
+                    case 'Equity':
+                        financials.Equity += amt;
+                        break;
+                    case 'Balance Sheet': // Funding
+                        if (cat === 'Funding') financials.Funding += amt;
+                        break;
+                }
+            });
+
+            // GMBR = Income - COGS - Freight COGS
+            const GMBR = financials.Income - financials.COGS - financials.FreightCOGS;
+
+            // GMAR = GMBR - Royalties
+            const GMAR = GMBR - financials.Royalties;
+
+            // Operating Income = GMAR - Expenses
+            const OperatingIncome = GMAR - financials.Expenses;
+
+            // Net Operating Income = Operating Income - Compensation
+            const NetOperatingIncome = OperatingIncome - financials.Compensation;
+
+            return {
+                ...financials,
+                GMBR,
+                GMAR,
+                OperatingIncome,
+                NetOperatingIncome
+            };
+
+        }
+
+        // REMOVED 'Num' and 'Balance' as requested.
+        const columns = [
+            { key: 'Date', label: 'Date' },
+            { key: 'Transaction Type', label: 'Type' },
+            { key: 'Name', label: 'Name' },
+            { key: 'Class', label: 'Class', clip: true },
+            { key: 'Memo/Description', label: 'Memo', clip: true },
+            { key: 'Account', label: 'Account', clip: true },
+            { key: 'Category', label: 'Category', clip: true },
+            { key: 'Master_Vertical', label: 'Master Vert', clip: true },
+            { key: 'Amount', label: 'Amount', type: 'number' }
+        ];
+
+        const els = {
+            loading: document.getElementById('loading'),
+            loadingMsg: document.getElementById('loading-msg'),
+            status: document.getElementById('connection-status'),
+            table: document.getElementById('data-table'),
+            thead: document.querySelector('#data-table thead tr'),
+            tbody: document.getElementById('table-body'),
+            // New Filters
+            dateStart: document.getElementById('filter-date-start'),
+            dateEnd: document.getElementById('filter-date-end'),
+            classIn: document.getElementById('filter-class'),
+            accountIn: document.getElementById('filter-account'),
+            typeIn: document.getElementById('filter-type'),
+            categoryIn: document.getElementById('filter-category'),
+            masterIn: document.getElementById('filter-master'),
+            nameIn: document.getElementById('filter-name'),
+            resetBtn: document.getElementById('reset-btn'),
+
+            // Datalists
+            dlClass: document.getElementById('class-options'),
+            dlAccount: document.getElementById('account-options'),
+            dlType: document.getElementById('type-options'),
+            dlCategory: document.getElementById('category-options'),
+            dlMaster: document.getElementById('master-vertical-options'),
+
+            rowCount: document.getElementById('row-count'),
+            tooltip: document.getElementById('tooltip')
+        };
+
+        async function fetchCSV() {
+            // If we have local data, use it immediately if we are offline or if fetch fails.
+            const hasLocalData = LOCAL_CSV_DATA && LOCAL_CSV_DATA.length > 1000;
+
+            // Optimistic Local Load for Localhost/File (Instant Load)
+            if (hasLocalData && (window.location.hostname === 'localhost' || window.location.protocol === 'file:')) {
+                console.log("Local environment detected. Using embedded data.");
+                parseAndLoad(LOCAL_CSV_DATA, "Offline / Sample Data", "badge badge-warn");
+                return;
+            }
+
+            const proxies = [
+                "https://api.allorigins.win/raw?url=",
+                "https://corsproxy.io/?",
+                "" // Try direct last
+            ];
+
+            // Timeout wrapper
+            const fetchWithTimeout = (url, ms = 3000) => {
+                return Promise.race([
+                    fetch(url),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms))
+                ]);
+            };
+
+            for (const proxy of proxies) {
+                try {
+                    const url = proxy ? proxy + encodeURIComponent(CSV_URL) : CSV_URL;
+                    console.log(`Fetching via: ${proxy || 'Direct'}`);
+                    els.loadingMsg.textContent = `Connecting via ${proxy ? 'Proxy' : 'Direct'}...`;
+
+                    const res = await fetchWithTimeout(url, 2000); // 2s timeout
+                    if (!res.ok) throw new Error("Status: " + res.status);
+                    const text = await res.text();
+
+                    parseAndLoad(text, "Live", "badge", "#4fd1c5");
+                    return;
+                } catch (e) {
+                    console.warn(`Failed with ${proxy || 'Direct'}:`, e.message);
+                }
+            }
+
+            // Fallback
+            if (hasLocalData) {
+                console.log("Fetch failed. Using Local/Embedded Data");
+                parseAndLoad(LOCAL_CSV_DATA, "Offline / Sample Data", "badge badge-warn");
+            } else {
+                els.loadingMsg.textContent = "Failed to load data. Please check connection.";
+                els.loadingMsg.style.color = "#feb2b2";
+                els.status.textContent = "Error";
+                els.status.style.color = "#feb2b2";
+            }
+        }
+
+        function parseAndLoad(csvText, statusText, statusClass, statusColor) {
+            Papa.parse(csvText, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    if (results.data && results.data.length > 0) {
+                        rawData = results.data;
+                        filteredData = [...rawData];
+                        populateFilters(rawData); initTable(); renderSummaries(rawData);
+                        els.loading.style.display = 'none';
+                        els.status.textContent = statusText;
+                        els.status.className = statusClass;
+                        if (statusColor) {
+                            els.status.style.color = statusColor;
+                            els.status.style.background = "rgba(79, 209, 197, 0.2)";
+                        } else {
+                            els.status.style.color = ""; // reset
+                        }
+                    }
+                }
+            });
+        }
+
+        function initTable() {
+            // Render Headers
+            els.thead.innerHTML = columns.map(col =>
+                `<th onclick="sortBy('${col.key}')">${col.label}</th>`
+            ).join('');
+
+            renderData();
+        }
+
+        function renderData() {
+            els.rowCount.textContent = filteredData.length.toLocaleString();
+
+            // Limit for performance if strictly needed, but let's try 5000
+            const displayData = filteredData.slice(0, 5000);
+
+            const html = displayData.map(row => {
+                const rowJson = encodeURIComponent(JSON.stringify(row));
+                return `<tr onmouseenter="showTooltip(this, '${rowJson}')" onmouseleave="hideTooltip()" onmousemove="moveTooltip(event)">${columns.map(col => {
+                    let val = row[col.key] || '';
+                    let className = '';
+
+                    if (col.type === 'number') {
+                        className = 'text-right font-mono text-accent';
+                        // simple formatting
+                        if (val && !isNaN(parseFloat(val))) {
+                            val = parseFloat(val).toLocaleString(undefined, { minimumFractionDigits: 2 });
+                        }
+                    }
+
+                    return `<td class="${className}">${escapeHtml(val)}</td>`;
+                }).join('')}</tr>`;
+            }).join('');
+
+            els.tbody.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        /* TOOLTIP FUNCTIONS */
+        window.showTooltip = function (tr, rowJson) {
+            const row = JSON.parse(decodeURIComponent(rowJson));
+
+            let content = '';
+            // Display all row keys
+            // You can customize order if needed, but iteration is fine
+            for (const [key, val] of Object.entries(row)) {
+                // Skip empty fields if desired, or show them. Let's show non-empty.
+                if (val && String(val).trim() !== "") {
+                    let displayKey = key;
+                    if (key === 'Memo/Description') displayKey = 'Memo';
+
+                    content += `
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">${escapeHtml(displayKey)}</span>
+                            <span class="tooltip-val">${escapeHtml(val)}</span>
+                        </div>
+                    `;
+                }
+            }
+
+            els.tooltip.innerHTML = content;
+            els.tooltip.style.display = 'block';
+        };
+
+        window.hideTooltip = function () {
+            els.tooltip.style.display = 'none';
+        };
+
+        window.moveTooltip = function (e) {
+            const tooltip = els.tooltip;
+            const PADDING = 20;
+            let x = e.clientX + PADDING;
+            let y = e.clientY + PADDING;
+
+            // Constrain
+            if (x + tooltip.offsetWidth > window.innerWidth) {
+                x = e.clientX - tooltip.offsetWidth - PADDING;
+            }
+            if (y + tooltip.offsetHeight > window.innerHeight) {
+                y = window.innerHeight - tooltip.offsetHeight - PADDING;
+                if (y < PADDING) y = PADDING; // Top safety
+            }
+
+            tooltip.style.left = x + 'px';
+            tooltip.style.top = y + 'px';
+        };
+
+
+        function populateFilters(data) {
+            const getUnique = (key) => [...new Set(data.map(r => r[key]).filter(x => x))].sort();
+
+            const classes = getUnique('Class');
+            const accounts = getUnique('Account');
+            const types = getUnique('Transaction Type');
+            const categories = getUnique('Category');
+            const masters = getUnique('Master_Vertical');
+
+            const makeOpts = (arr) => arr.map(v => `<option value="${escapeHtml(v)}">`).join('');
+
+            if (els.dlClass) els.dlClass.innerHTML = makeOpts(classes);
+            if (els.dlAccount) els.dlAccount.innerHTML = makeOpts(accounts);
+            if (els.dlType) els.dlType.innerHTML = makeOpts(types);
+            if (els.dlCategory) els.dlCategory.innerHTML = makeOpts(categories);
+            if (els.dlMaster) els.dlMaster.innerHTML = makeOpts(masters);
+        }
+
+        function handleFilter() {
+            const dStart = els.dateStart.value ? new Date(els.dateStart.value) : null;
+            const dEnd = els.dateEnd.value ? new Date(els.dateEnd.value) : null;
+
+            const fClass = els.classIn.value.toLowerCase().trim();
+            const fAccount = els.accountIn.value.toLowerCase().trim();
+            const fType = els.typeIn.value.toLowerCase().trim();
+            const fCategory = els.categoryIn.value.toLowerCase().trim();
+            const fMaster = els.masterIn.value.toLowerCase().trim();
+            const fName = els.nameIn.value.toLowerCase().trim();
+
+            filteredData = rawData.filter(row => {
+                // Date Check
+                if (dStart || dEnd) {
+                    const rDate = new Date(row['Date']); // Assuming 'Date' column exists and is parseable
+                    if (dStart && rDate < dStart) return false;
+                    if (dEnd && rDate > dEnd) return false;
+                }
+
+                // Class Check
+                if (fClass && !String(row['Class'] || '').toLowerCase().includes(fClass)) return false;
+
+                // Account Check
+                if (fAccount && !String(row['Account'] || '').toLowerCase().includes(fAccount)) return false;
+
+                // Type Check
+                if (fType && !String(row['Transaction Type'] || '').toLowerCase().includes(fType)) return false;
+
+                // Category Check
+                if (fCategory && !String(row['Category'] || '').toLowerCase().includes(fCategory)) return false;
+
+                // Master Vertical Check
+                if (fMaster && !String(row['Master_Vertical'] || '').toLowerCase().includes(fMaster)) return false;
+
+                // Name/Desc Check (Search Name, Vendor, Memo)
+                if (fName) {
+                    const combined = (
+                        (row['Name'] || '') + " " +
+                        (row['Vendor'] || '') + " " +
+                        (row['Memo/Description'] || '')
+                    ).toLowerCase();
+                    if (!combined.includes(fName)) return false;
+                }
+
+                return true;
+            });
+
+            renderData();
+            renderSummaries(filteredData);
+        }
+
+        function renderSummaries(data) {
+            // P&L Calculation
+            const fin = calculateFinancials(data);
+
+            // Existing Summaries (Class/Account)
+            // Aggregate by Class
+            const classTotals = {};
+            // Aggregate by Account
+            const accountTotals = {};
+
+            data.forEach(row => {
+                const amt = parseFloat((row['Amount'] || '0').replace(/,/g, ''));
+                if (isNaN(amt)) return;
+
+                const cls = row['Class'] || '(No Class)';
+                const acc = row['Account'] || '(No Account)';
+
+                classTotals[cls] = (classTotals[cls] || 0) + amt;
+                accountTotals[acc] = (accountTotals[acc] || 0) + amt;
+            });
+
+            // Convert and Sort
+            const sortedClass = Object.entries(classTotals).sort((a, b) => b[1] - a[1]);
+            const sortedAccount = Object.entries(accountTotals).sort((a, b) => b[1] - a[1]);
+
+            // Helper to render
+            const renderRows = (arr, tbodyId) => {
+                const tbody = document.getElementById(tbodyId);
+                if (!tbody) return;
+
+                if (arr.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 20px; color: var(--text-muted);">No data</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = arr.map(([key, val]) => {
+                    const fmtVal = val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const color = val < 0 ? '#feb2b2' : '#4fd1c5';
+                    return `
+                        <tr>
+                            <td>${escapeHtml(key)}</td>
+                            <td style="text-align: right; color: ${color}; font-weight: 600;">${fmtVal}</td>
+                        </tr>
+                    `;
+                }).join('');
+            };
+
+            renderRows(sortedClass, 'class-summary-body');
+            renderRows(sortedAccount, 'account-summary-body');
+
+            // Render P&L Table (New)
+            const pnlBody = document.getElementById('pnl-summary-body');
+            if (pnlBody) {
+                const pnlRows = [
+                    { label: 'Income', val: fin.Income, bold: true },
+                    { label: 'COGS', val: -fin.COGS, indent: true },
+                    { label: 'Freight COGS', val: -fin.FreightCOGS, indent: true },
+                    { label: 'Gross Margin Before Royalties', val: fin.GMBR, bold: true, borderTop: true },
+                    { label: 'Royalties', val: -fin.Royalties, indent: true },
+                    { label: 'Gross Margin After Royalties', val: fin.GMAR, bold: true, borderTop: true },
+                    { label: 'Expenses (Operating & Insurance)', val: -fin.Expenses, indent: true },
+                    { label: 'Operating Income', val: fin.OperatingIncome, bold: true, borderTop: true },
+                    { label: 'Compensation', val: -fin.Compensation, indent: true },
+                    { label: 'Net Operating Income', val: fin.NetOperatingIncome, bold: true, borderTop: true, color: true }
+                ];
+
+                pnlBody.innerHTML = pnlRows.map(row => {
+                    const fmtVal = row.val.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                    const color = row.color ? (row.val < 0 ? '#feb2b2' : '#4fd1c5') : 'var(--text-primary)';
+                    const weight = row.bold ? '600' : '400';
+                    const style = row.indent ? 'padding-left: 20px; color: var(--text-muted);' : '';
+                    const border = row.borderTop ? 'border-top: 1px solid rgba(255,255,255,0.1);' : '';
+
+                    return `
+                         <tr style="${border}">
+                             <td style="${style} font-weight: ${weight};">${row.label}</td>
+                             <td style="text-align: right; color: ${color}; font-weight: ${weight};">${fmtVal}</td>
+                         </tr>
+                     `;
+                }).join('');
+            }
+
+            // Render Balance Sheet Table (New)
+            const bsBody = document.getElementById('bs-summary-body');
+            if (bsBody) {
+                const bsRows = [
+                    { label: 'Assets', val: fin.Assets, bold: true },
+                    { label: 'Liabilities', val: fin.Liabilities, indent: true }, // Usually negative in accounting eqn? User said "Minus 1".
+                    { label: 'Equity (Retained Earnings)', val: fin.Equity, bold: true },
+                    { label: 'Funding', val: fin.Funding, bold: true, separate: true }
+                ];
+
+                bsBody.innerHTML = bsRows.map(row => {
+                    const fmtVal = row.val.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                    const color = row.val < 0 ? '#feb2b2' : '#4fd1c5';
+                    const border = row.separate ? 'border-top: 1px solid rgba(255,255,255,0.1);' : '';
+
+                    return `
+                         <tr style="${border}">
+                             <td style="font-weight: ${row.bold ? 600 : 400}; ${row.indent ? 'padding-left: 20px;' : ''}">${row.label}</td>
+                             <td style="text-align: right; color: ${color}; font-weight: 600;">${fmtVal}</td>
+                         </tr>
+                     `;
+                }).join('');
+            }
+
+        }
+
+        // Sorting
+        let currentSort = { key: null, dir: 1 };
+        window.sortBy = function (key) {
+            if (currentSort.key === key) {
+                currentSort.dir *= -1;
+            } else {
+                currentSort.key = key;
+                currentSort.dir = 1;
+            }
+
+            filteredData.sort((a, b) => {
+                let valA = a[key] || '';
+                let valB = b[key] || '';
+
+                // DATE FIX
+                if (key === 'Date') {
+                    const dateA = new Date(valA);
+                    const dateB = new Date(valB);
+                    if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
+                        return (dateA - dateB) * currentSort.dir;
+                    }
+                    // Fallback to string compare if invalid date
+                }
+
+                // Detection for numbers
+                const numA = parseFloat(valA.replace(/,/g, ''));
+                const numB = parseFloat(valB.replace(/,/g, ''));
+
+                if (!isNaN(numA) && !isNaN(numB) && columns.find(c => c.key === key && c.type === 'number')) {
+                    return (numA - numB) * currentSort.dir;
+                }
+
+                return valA.localeCompare(valB) * currentSort.dir;
+            });
+
+            renderData();
+        };
+
+        try {
+            window.addEventListener('DOMContentLoaded', () => {
+                // User Guide Modal
+                const modal = document.getElementById("guide-modal");
+                const btn = document.getElementById("user-guide-btn");
+                const span = document.getElementsByClassName("close-btn")[0];
+
+                btn.onclick = function () {
+                    modal.style.display = "block";
+                }
+
+                span.onclick = function () {
+                    modal.style.display = "none";
+                }
+
+                window.onclick = function (event) {
+                    if (event.target == modal) {
+                        modal.style.display = "none";
+                    }
+                }
+
+                // Events
+                const inputs = [els.dateStart, els.dateEnd, els.classIn, els.accountIn, els.typeIn, els.categoryIn, els.masterIn, els.nameIn];
+                inputs.forEach(el => el.addEventListener('input', handleFilter));
+
+                els.resetBtn.addEventListener('click', () => {
+                    inputs.forEach(el => el.value = '');
+                    handleFilter();
+                });
+
+                // Start
+                fetchCSV();
+            });
+        } catch (err) {
+            console.error(err);
+            alert("JS Error: " + err.message);
+            document.getElementById('loading-msg').textContent = "JS Error: " + err.message;
+        } // Small delay to allow render
+
+
+
+
+        /* PDF GENERATION LOGIC */
+        async function generatePDF() {
+            const btn = document.getElementById('export-pdf-btn');
+            const originalBtnText = btn.innerText;
+
+            console.log("Starting PDF generation...");
+            try {
+                if (!window.jspdf) {
+                    throw new Error("jsPDF library not loaded. Check your internet connection.");
+                }
+
+                // Set button to loading state
+                btn.innerText = "GENERATING...";
+                btn.style.opacity = "0.7";
+                btn.style.cursor = "wait";
+                btn.disabled = true;
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                if (filteredData.length === 0) {
+                    alert("No data available to export. Please adjust your filters.");
+                    btn.innerText = originalBtnText;
+                    btn.style.opacity = "1";
+                    btn.style.cursor = "pointer";
+                    btn.disabled = false;
+                    return;
+                }
+
+                // LOGO
+                const logoUrl = "https://upload.wikimedia.org/wikipedia/en/9/9d/Mexican_Summer_logo.png";
+
+                const loadImage = (url) => {
+                    return new Promise((resolve) => {
+                        const img = new Image();
+                        img.crossOrigin = "Anonymous";
+                        img.src = url;
+                        img.onload = () => resolve(img);
+                        img.onerror = () => {
+                            console.warn("Could not load logo due to CORS or network error.");
+                            resolve(null);
+                        };
+                    });
+                };
+
+                const logoImg = await loadImage(logoUrl);
+
+                // COLORS
+                const colorDark = [15, 23, 42];
+                const colorAccent = [79, 209, 197];
+
+                // --- PAGE 1: TITLE PAGE ---
+                if (logoImg) {
+                    const imgWidth = 50;
+                    const imgHeight = (logoImg.height / logoImg.width) * imgWidth;
+                    doc.addImage(logoImg, 'PNG', (210 - imgWidth) / 2, 60, imgWidth, imgHeight);
+                } else {
+                    doc.setFontSize(24);
+                    doc.setTextColor(...colorDark);
+                    doc.text("Mexican Summer", 105, 80, { align: "center" });
+                }
+
+                doc.setFontSize(26);
+                doc.setTextColor(...colorDark);
+                doc.text("Quickbooks Transaction History", 105, 130, { align: "center" });
+
+                doc.setFontSize(14);
+                doc.setTextColor(100, 100, 100);
+                const reportDate = new Date().toLocaleDateString();
+                doc.text(`Report Generated: ${reportDate}`, 105, 145, { align: "center" });
+
+                doc.setFontSize(10);
+                doc.text("Internal Executive Report", 105, 270, { align: "center" });
+
+                // --- PAGE 2: EXECUTIVE SUMMARY ---
+                doc.addPage();
+
+                if (logoImg) {
+                    // Start: RESIZED LOGO (15mm width, x=180 aligned right)
+                    const logoW = 15;
+                    const logoH = (logoImg.height / logoImg.width) * logoW;
+                    doc.addImage(logoImg, 'PNG', 180, 10, logoW, logoH);
+                    // End: RESIZED LOGO
+                }
+                doc.setFontSize(22);
+                doc.setTextColor(...colorDark);
+                doc.text("Executive Summary", 14, 22);
+                doc.setDrawColor(0, 0, 0);
+                doc.line(14, 26, 196, 26);
+
+                let totalIncome = 0;
+                let totalExpense = 0;
+                let totalNet = 0;
+                let count = filteredData.length;
+                let minDate = null;
+                let maxDate = null;
+
+                // Category Breakdown
+                const incomeByCategory = {};
+
+                filteredData.forEach(row => {
+                    const amt = parseFloat(String(row['Amount'] || '0').replace(/,/g, ''));
+                    if (!isNaN(amt)) {
+                        totalNet += amt;
+                        if (amt > 0) {
+                            totalIncome += amt;
+                            const cat = row['Category'] || 'Uncategorized';
+                            incomeByCategory[cat] = (incomeByCategory[cat] || 0) + amt;
+                        }
+                        else totalExpense += amt;
+                    }
+                    let d = row['Date'] ? new Date(row['Date']) : null;
+                    if (d && !isNaN(d.getTime())) {
+                        if (!minDate || d < minDate) minDate = d;
+                        if (!maxDate || d > maxDate) maxDate = d;
+                    }
+                });
+
+                const dateRangeStr = (minDate && maxDate)
+                    ? `${minDate.toISOString().split('T')[0]} to ${maxDate.toISOString().split('T')[0]}`
+                    : "All Time";
+
+                // Prepare Table Body with Breakdown
+                const tableBody = [
+                    ['Report Date Range', dateRangeStr],
+                    ['Total Transactions', count.toLocaleString()],
+                    ['Total Income', totalIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })]
+                ];
+
+                // Sort and Inject Categories
+                Object.entries(incomeByCategory)
+                    .sort((a, b) => b[1] - a[1]) // Sort desc
+                    .forEach(([cat, val]) => {
+                        tableBody.push([
+                            { content: `   ${cat}`, styles: { fontStyle: 'italic', textColor: [100, 100, 100] } },
+                            { content: val.toLocaleString('en-US', { style: 'currency', currency: 'USD' }), styles: { fontSize: 9, textColor: [100, 100, 100], halign: 'right' } }
+                        ]);
+                    });
+
+                tableBody.push(
+                    ['Total Expenses', totalExpense.toLocaleString('en-US', { style: 'currency', currency: 'USD' })],
+                    ['Net Amount', totalNet.toLocaleString('en-US', { style: 'currency', currency: 'USD' })]
+                );
+
+                doc.autoTable({
+                    startY: 40,
+                    head: [['Metric', 'Value']],
+                    body: tableBody,
+                    theme: 'striped',
+                    headStyles: { fillColor: colorDark, textColor: [255, 255, 255], fontStyle: 'bold' },
+                    styles: { fontSize: 11, cellPadding: 6 },
+                    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 100 }, 1: { halign: 'right' } }
+                });
+
+                // Top Classes & Accounts Logic (Unchanged but included)
+                const classTotals = {};
+                const accountTotals = {};
+                filteredData.forEach(row => {
+                    const amt = parseFloat(String(row['Amount'] || '0').replace(/,/g, ''));
+                    if (isNaN(amt)) return;
+                    const cls = row['Class'] || '(No Class)';
+                    const acc = row['Account'] || '(No Account)';
+                    classTotals[cls] = (classTotals[cls] || 0) + amt;
+                    accountTotals[acc] = (accountTotals[acc] || 0) + amt;
+                });
+
+                const sortedClass = Object.entries(classTotals)
+                    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+                    .slice(0, 15)
+                    .map(([k, v]) => [k, v.toLocaleString('en-US', { style: 'currency', currency: 'USD' })]);
+
+                const sortedAccount = Object.entries(accountTotals)
+                    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+                    .slice(0, 15)
+                    .map(([k, v]) => [k, v.toLocaleString('en-US', { style: 'currency', currency: 'USD' })]);
+
+                // P&L and Balance Sheet Logic for PDF
+                const fin = calculateFinancials(filteredData);
+
+                // PDF P&L Rows
+                const pnlRows = [
+                    ['Income', fin.Income.toLocaleString('en-US', { style: 'currency', currency: 'USD' })],
+                    ['   COGS', (-fin.COGS).toLocaleString('en-US', { style: 'currency', currency: 'USD' })],
+                    ['   Freight COGS', (-fin.FreightCOGS).toLocaleString('en-US', { style: 'currency', currency: 'USD' })],
+                    [{ content: 'Gross Margin Before Royalties', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, { content: fin.GMBR.toLocaleString('en-US', { style: 'currency', currency: 'USD' }), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
+                    ['   Royalties', (-fin.Royalties).toLocaleString('en-US', { style: 'currency', currency: 'USD' })],
+                    [{ content: 'Gross Margin After Royalties', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, { content: fin.GMAR.toLocaleString('en-US', { style: 'currency', currency: 'USD' }), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
+                    ['   Expenses (Op & Ins)', (-fin.Expenses).toLocaleString('en-US', { style: 'currency', currency: 'USD' })],
+                    [{ content: 'Operating Income', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, { content: fin.OperatingIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' }), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
+                    ['   Compensation', (-fin.Compensation).toLocaleString('en-US', { style: 'currency', currency: 'USD' })],
+                    [{ content: 'Net Operating Income', styles: { fontStyle: 'bold', fillColor: [230, 255, 250], textColor: [0, 100, 0] } }, { content: fin.NetOperatingIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' }), styles: { fontStyle: 'bold', fillColor: [230, 255, 250], textColor: [0, 100, 0] } }]
+                ];
+
+                // PDF Balance Sheet Rows
+                const bsRows = [
+                    [{ content: 'Assets', styles: { fontStyle: 'bold' } }, fin.Assets.toLocaleString('en-US', { style: 'currency', currency: 'USD' })],
+                    ['   Liabilities', fin.Liabilities.toLocaleString('en-US', { style: 'currency', currency: 'USD' })],
+                    [{ content: 'Equity (Retained Earnings)', styles: { fontStyle: 'bold' } }, fin.Equity.toLocaleString('en-US', { style: 'currency', currency: 'USD' })],
+                    [{ content: 'Funding', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, { content: fin.Funding.toLocaleString('en-US', { style: 'currency', currency: 'USD' }), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }]
+                ];
+
+                let finalY = doc.lastAutoTable.finalY + 15;
+                if (finalY + 120 > 280) { doc.addPage(); finalY = 20; }
+
+                doc.setFontSize(14);
+                doc.setTextColor(...colorDark);
+                doc.text("Profit & Loss Statement", 14, finalY);
+
+                doc.autoTable({
+                    startY: finalY + 5,
+                    head: [['Metric', 'Value']],
+                    body: pnlRows,
+                    theme: 'plain',
+                    headStyles: { fillColor: colorAccent, textColor: [11, 17, 32], fontStyle: 'bold' },
+                    styles: { fontSize: 10, cellPadding: 4 },
+                    columnStyles: { 1: { halign: 'right' } }
+                });
+
+                finalY = doc.lastAutoTable.finalY + 15;
+                if (finalY + 60 > 280) { doc.addPage(); finalY = 20; }
+
+                doc.setFontSize(14);
+                doc.setTextColor(...colorDark);
+                doc.text("Balance Sheet", 14, finalY);
+
+                doc.autoTable({
+                    startY: finalY + 5,
+                    head: [['Item', 'Value']],
+                    body: bsRows,
+                    theme: 'plain',
+                    headStyles: { fillColor: colorAccent, textColor: [11, 17, 32], fontStyle: 'bold' },
+                    styles: { fontSize: 10, cellPadding: 4 },
+                    columnStyles: { 1: { halign: 'right' } }
+                });
+
+                finalY = doc.lastAutoTable.finalY + 15;
+                if (finalY + 80 > 280) { doc.addPage(); finalY = 20; }
+
+                // Top Classes Table
+                doc.setFontSize(14);
+                doc.setTextColor(...colorDark);
+                doc.text("Top Classes (By Magnitude)", 14, finalY);
+
+                doc.autoTable({
+                    startY: finalY + 5,
+                    head: [['Class', 'Total Amount']],
+                    body: sortedClass,
+                    theme: 'grid',
+                    headStyles: { fillColor: colorAccent, textColor: [11, 17, 32], fontStyle: 'bold' },
+                    styles: { fontSize: 10, cellPadding: 4 },
+                    columnStyles: { 1: { halign: 'right' } }
+                });
+
+                finalY = doc.lastAutoTable.finalY + 15;
+                if (finalY + 80 > 280) { doc.addPage(); finalY = 20; }
+
+                // Top Accounts Table
+                doc.setFontSize(14);
+                doc.setTextColor(...colorDark);
+                doc.text("Top Accounts (By Magnitude)", 14, finalY);
+
+                doc.autoTable({
+                    startY: finalY + 5,
+                    head: [['Account', 'Total Amount']],
+                    body: sortedAccount,
+                    theme: 'grid',
+                    headStyles: { fillColor: colorAccent, textColor: [11, 17, 32], fontStyle: 'bold' },
+                    styles: { fontSize: 10, cellPadding: 4 },
+                    columnStyles: { 1: { halign: 'right' } }
+                });
+
+                console.log("Saving PDF via Blob...");
+                const blob = doc.output('blob');
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Quickbooks_Executive_Report.pdf';
+                document.body.appendChild(a);
+                a.click();
+
+                // Cleanup
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+
+                console.log("PDF download triggered.");
+
+            } catch (err) {
+                console.error("PDF Export Error:", err);
+                alert("Error generating PDF: " + err.message);
+            } finally {
+                // Restore button state
+                btn.innerText = originalBtnText;
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
+                btn.disabled = false;
+            }
+
+
+
+        }
+
+        function setupPdfBtn() {
+            const pdfBtn = document.getElementById('export-pdf-btn');
+            if (pdfBtn) {
+                pdfBtn.replaceWith(pdfBtn.cloneNode(true));
+                document.getElementById('export-pdf-btn').addEventListener('click', generatePDF);
+            } else {
+                setTimeout(setupPdfBtn, 500);
+            }
+        }
+        setupPdfBtn();
+    </script>
+
+    <!-- User Guide Modal -->
+    <div id="guide-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>User Guide & Workflow</h2>
+
+            <div class="workflow-box">
+                <h3 style="color: #feb2b2; margin-top: 0;">CRITICAL WORKFLOW</h3>
+                <ol>
+                    <li><strong>Download General Ledger:</strong> Export the General Ledger from QuickBooks.</li>
+                    <li><strong>Place File:</strong> Save the exported file into the designated <code>QB Data</code>
+                        folder. (Accounting Team Task)</li>
+                    <li><strong>Run Script:</strong> Trigger the Python update script to aggregate the new data and
+                        update the CSV. (Accounting Team Task)</li>
+                </ol>
+            </div>
+
+            <h3>Using the Dashboard</h3>
+            <ul>
+                <li><strong>Filters:</strong> Use the "Filter by" bar to drill down by Date, Class, Account, Type, or
+                    Name.</li>
+                <li><strong>Summaries:</strong> "Total by Class" and "Total by Account" tables update automatically
+                    based on your active filters.</li>
+                <li><strong>Tooltips:</strong> Hover over any row to see the full transaction details (Memo, Splits,
+                    etc.).</li>
+                <li><strong>Sorting:</strong> Click column headers to sort. Click "Date" safely to sort chronologically.
+                </li>
+            </ul>
+        </div>
+    </div>
+
+</body>
+
+</html>
