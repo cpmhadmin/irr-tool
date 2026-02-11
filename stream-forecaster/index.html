@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Forecaster</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-plugin-dragdata@2.2.3/dist/chartjs-plugin-dragdata.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Stream Forecaster (BETA)</h1>
+        <div class="chart-container">
+            <canvas id="forecastChart"></canvas>
+            <canvas id="overlayCanvas"></canvas>
+        </div>
+        <div class="footer-controls">
+            <div class="project-controls">
+                <div class="input-group">
+                    <label for="projectName">Project Name:</label>
+                    <input type="text" id="projectName" placeholder="Enter Project Name">
+                </div>
+                <div class="input-group">
+                    <label for="announceDate">Announce Date:</label>
+                    <input type="date" id="announceDate">
+                </div>
+                <div class="input-group">
+                    <label for="streetDate">Street Date:</label>
+                    <input type="date" id="streetDate">
+                </div>
+                <div id="dateError" class="error-message" style="display: none;">Announce Date cannot be after Street
+                    Date</div>
+            </div>
+
+            <div class="input-group" style="margin-top: 15px;">
+                <label for="yAxisMax">Max Daily Streams:</label>
+                <input type="number" id="yAxisMax" value="250000" step="10000">
+            </div>
+            <div class="history-controls">
+                <button id="undoBtn" title="Undo (⌘Z)" disabled>Undo (⌘Z)</button>
+                <button id="redoBtn" title="Redo (⇧⌘Z)" disabled>Redo (⇧⌘Z)</button>
+            </div>
+            <div class="instructions">
+                <strong>Tip:</strong> Drag points to adjust manually. <strong>Double-Click</strong> two points to
+                interpolate.
+            </div>
+        </div>
+
+        <div class="analysis-container">
+            <div class="dsp-section">
+                <h3>DSP Assumptions</h3>
+                <div class="table-wrapper dsp-table-wrapper">
+                    <table id="dspTable">
+                        <thead>
+                            <tr>
+                                <th>DSP</th>
+                                <th>Share (%)</th>
+                                <th>Value Per Stream ($)</th>
+                                <th>Streams</th>
+                                <th>Revenue ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="charts-section">
+                <h3>Distribution Analysis</h3>
+                <div class="charts-wrapper">
+                    <div class="chart-box">
+                        <canvas id="streamsPieChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="revenuePieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tables-container">
+            <div class="table-wrapper">
+                <h3>Weekly Forecast</h3>
+                <div class="table-scroll-container">
+                    <table id="weeklyTable">
+                        <thead>
+                            <tr>
+                                <th>Week</th>
+                                <th>Weekly Amount</th>
+                                <th>Cumulative Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
