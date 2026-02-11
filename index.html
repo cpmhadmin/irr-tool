@@ -8,27 +8,24 @@
 
   <style>
     /* ----------------------------------------------------------
-      DOS FONT SETUP
-      1) Download “Perfect DOS VGA 437”
-      2) Convert to WOFF2 (or download WOFF/WOFF2 if you find one)
-      3) Put it here: /fonts/PerfectDOSVGA437.woff2 (relative to this HTML)
+      PERFECT DOS VGA 437 — hosted on GitHub
     ---------------------------------------------------------- */
     @font-face {
       font-family: "Perfect DOS VGA 437";
-      src: url("./fonts/PerfectDOSVGA437.woff2") format("woff2");
-      font-weight: 400;
+      src: url("https://raw.githubusercontent.com/cpmhadmin/irr-tool/main/fonts/PerfectDOSVGA437.woff2") format("woff2");
+      font-weight: normal;
       font-style: normal;
       font-display: swap;
     }
 
     :root {
-      /* DOS-ish palette */
       --bg-color: #000000;
-      --text-color: #33ff33;    /* bright DOS green */
+      --text-color: #33ff33;
       --accent-color: #33ff33;
       --glow-color: rgba(51, 255, 51, 0.18);
 
-      --font-stack: "Perfect DOS VGA 437", ui-monospace, SFMono-Regular, Menlo, Monaco,
+      --font-stack: "Perfect DOS VGA 437",
+        ui-monospace, SFMono-Regular, Menlo, Monaco,
         Consolas, "Liberation Mono", "Courier New", monospace;
     }
 
@@ -45,7 +42,7 @@
       font-family: var(--font-stack);
       overflow: hidden;
 
-      /* Make it feel more like pixel text */
+      /* bitmap-friendly */
       -webkit-font-smoothing: none;
       -moz-osx-font-smoothing: grayscale;
       text-rendering: optimizeSpeed;
@@ -64,8 +61,8 @@
     /* Typing Effect */
     .cpmh-tty {
       font-size: clamp(18px, 4vw, 32px);
-      line-height: 1.05;       /* tighter = more DOS */
-      letter-spacing: 0;       /* bitmap fonts look best without tracking */
+      line-height: 1.05;
+      letter-spacing: 0;
       display: flex;
       align-items: baseline;
       white-space: nowrap;
@@ -77,9 +74,9 @@
       width: 0.7ch;
       height: 1.05em;
       margin-left: 0.15ch;
-      transform: translateY(0.10em);
+      transform: translateY(0.1em);
       background: currentColor;
-      animation: cpmh-blink 0.9s steps(1, end) infinite; /* slightly snappier blink */
+      animation: cpmh-blink 0.9s steps(1, end) infinite;
       box-shadow: 0 0 10px var(--glow-color);
     }
 
@@ -101,7 +98,7 @@
 
     .pass-toggle {
       background: transparent;
-      border: 1px solid color-mix(in srgb, var(--text-color) 75%, transparent);
+      border: 1px solid rgba(51, 255, 51, 0.75);
       color: var(--text-color);
       padding: 8px 16px;
       font-family: inherit;
@@ -141,7 +138,6 @@
       font-family: inherit;
       outline: none;
       width: 160px;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
       text-shadow: 0 0 8px var(--glow-color);
     }
 
@@ -173,7 +169,6 @@
       color: var(--text-color);
       text-decoration: none;
       font-size: 16px;
-      letter-spacing: 0.02em;
       padding: 4px 12px;
       transition: all 0.2s ease;
       opacity: 0.8;
@@ -199,14 +194,14 @@
 <body>
   <div class="cpmh-hero">
     <div class="cpmh-tty">
-      <span id="cpmhText"></span><span class="cpmh-cursor" aria-hidden="true"></span>
+      <span id="cpmhText"></span><span class="cpmh-cursor"></span>
     </div>
 
     <div id="passwordArea">
       <button class="pass-toggle" id="passToggle">Access Toolkit</button>
       <div class="input-wrap" id="inputWrap">
         <input type="password" id="passInput" placeholder="Password" />
-        <button class="pass-toggle" style="font-size:12px; padding: 4px 10px;" id="unlockBtn">Unlock</button>
+        <button class="pass-toggle" style="font-size:12px; padding:4px 10px;" id="unlockBtn">Unlock</button>
       </div>
     </div>
 
@@ -232,33 +227,29 @@
       const TEXT = "Central Park Media Holdings";
       const PASSWORD = "cpmh";
 
-      // Typing Logic (slightly faster than before)
       function startTyping() {
         let i = 0;
-
-        // was 80–150ms; now faster:
         const minDelay = 55;
         const maxDelay = 110;
-        const randDelay = () => Math.floor(minDelay + Math.random() * (maxDelay - minDelay));
+        const randDelay = () =>
+          Math.floor(minDelay + Math.random() * (maxDelay - minDelay));
 
         function tick() {
           textEl.textContent = TEXT.slice(0, i++);
           if (i <= TEXT.length) {
             setTimeout(tick, randDelay());
           } else {
-            setTimeout(() => passArea.classList.add("visible"), 650); // a bit faster reveal too
+            setTimeout(() => passArea.classList.add("visible"), 650);
           }
         }
         tick();
       }
 
-      // Password Toggle Logic
       passToggle.addEventListener("click", () => {
         inputWrap.classList.toggle("open");
         if (inputWrap.classList.contains("open")) passInput.focus();
       });
 
-      // Unlock Logic
       function attemptUnlock() {
         if (passInput.value.toLowerCase() === PASSWORD) {
           passArea.style.display = "none";
@@ -272,14 +263,12 @@
       }
 
       unlockBtn.addEventListener("click", attemptUnlock);
-      passInput.addEventListener("keypress", (e) => {
+      passInput.addEventListener("keypress", e => {
         if (e.key === "Enter") attemptUnlock();
       });
 
-      // Startup
       setTimeout(startTyping, 450);
     })();
   </script>
 </body>
-
 </html>
