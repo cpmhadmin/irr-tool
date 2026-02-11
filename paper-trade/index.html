@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html xmlns:og="http://opengraphprotocol.org/schema/" xmlns:fb="http://www.facebook.com/2008/fbml" lang="en-US"
+    lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>CPMH • Paper Trade Report (Royalties)</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <style>
+        /* DIAGNOSTIC OUTLINES: helps see what is overflowing */
+        /* * { outline: 1px solid rgba(255, 0, 0, 0.2) !important; } */
+
+        :root {
+            /* Palette */
+            --bg-grad-start: #1e293b;
+            --bg-grad-end: #020617;
+
+            --card-glass: rgba(15, 23, 42, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+
+            --accent-primary: #38bdf8;
+            --accent-secondary: #818cf8;
+
+            /* Safe Areas */
+            --sat: env(safe-area-inset-top, 20px);
+            --sab: env(safe-area-inset-bottom, 20px);
+            --sal: env(safe-area-inset-left, 0px);
+            --sar: env(safe-area-inset-right, 0px);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+            color: var(--text-main);
+            background-color: var(--bg-grad-end);
+            background-image: radial-gradient(circle at 50% 0%, var(--bg-grad-start), var(--bg-grad-end) 90%);
+            background-attachment: scroll;
+            /* iOS fix */
+            min-height: 100vh;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Debug Banner */
+        #debug-banner {
+            background: #2563eb;
+            /* Blue */
+            color: white;
+            padding: 8px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            display: block;
+            width: 100%;
+        }
+
+        /* Responsive Container */
+        .app {
+            width: 100%;
+            min-height: 100vh;
+            padding-top: var(--sat);
+            padding-bottom: calc(var(--sab) + 30px);
+            padding-left: max(12px, var(--sal));
+            /* Reduced padding */
+            padding-right: max(12px, var(--sar));
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* Typography */
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
+        }
+
+        .header {
+            margin-bottom: 20px;
+            margin-top: 10px;
+        }
+
+        .title {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: #fff;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.4;
+            max-width: 95%;
+        }
+
+        .badge {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: rgba(45, 212, 191, 0.1);
+            color: #5eead4;
+            border: 1px solid rgba(45, 212, 191, 0.25);
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            overflow: hidden;
+            /* Critical for keeping content inside */
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        @media (min-width: 600px) {
+            .controls {
+                flex-direction: row;
+                align-items: center;
+            }
+        }
+
+        .pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 12px;
+            height: 42px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            width: 100%;
+        }
+
+        @media (min-width: 600px) {
+            .pill {
+                width: auto;
+                flex-grow: 1;
+            }
+        }
+
+        .pill span {
+            font-size: 12px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        select {
+            appearance: none;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            outline: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .btn {
+            height: 42px;
+            padding: 0 16px;
+            border-radius: 999px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: #0f172a;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        @media (min-width: 600px) {
+            .btn {
+                width: auto;
+            }
+        }
+
+        .status {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        /* Summary Grid */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            /* Force 1 column on mobile */
+            gap: 8px;
+        }
+
+        @media (min-width: 400px) {
+            .summary-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .summary-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .summary-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
+        .summary-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .summary-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .summary-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            word-break: break-all;
+        }
+
+        .plain-wrap {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--card-border);
+        }
+
+        .big-summary {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #cbd5e1;
+        }
+
+        /* Charts */
+        .chart-wrap {
+            width: 100%;
+            height: 280px;
+            position: relative;
+        }
+
+        @media (min-width: 600px) {
+            .chart-wrap {
+                height: 360px;
+            }
+        }
+
+        .legend {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 10px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        /* Tables */
+        .table-wrap {
+            overflow-x: auto;
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 10px;
+            /* Helper for scrollbar visibility */
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            white-space: nowrap;
+            /* Keep rows single line */
+        }
+
+        .table th,
+        .table td {
+            text-align: right;
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--card-border);
+            color: #e2e8f0;
+        }
+
+        .table th {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 10px;
+            text-transform: uppercase;
+            white-space: normal;
+            /* Allow headers to wrap */
+            vertical-align: bottom;
+            line-height: 1.2;
+        }
+
+        .table th:first-child,
+        .table td:first-child {
+            text-align: left;
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            /* background: #1e293b; */
+            /* Solid background needed for sticky */
+            background: var(--bg-grad-start);
+            /* Approximate match */
+        }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        /* --- BLOTTER REFACTOR --- */
+        .blotter-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .blotter-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+            background: currentColor;
+            /* Inherits color from card style */
+        }
+
+        .blotter-header {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .blotter-date {
+            font-weight: 700;
+            color: #fff;
+            margin-left: 8px;
+            letter-spacing: 0;
+        }
+
+        .blotter-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            row-gap: 24px;
+        }
+
+        /* Mobile: stacked. Desktop: 3 columns for better consolidation */
+        @media (min-width: 640px) {
+            .blotter-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .blotter-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .metric-block {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        /* Hero: NPV / Mult */
+        .metric-hero .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        .metric-subvalue {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        /* Primary: Mu / Sigma */
+        .metric-primary .metric-value {
+            font-size: 18px;
+            color: #e2e8f0;
+        }
+
+        /* Secondary: L365 / Rates */
+        .metric-secondary .metric-value {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        /* Advanced Assumptions Dropdown */
+        .advanced-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            color: var(--text-muted);
+            user-select: none;
+            transition: background 0.2s;
+            width: fit-content;
+        }
+
+        .advanced-toggle:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .advanced-content {
+            display: none;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .advanced-content.open {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .adv-pill {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .adv-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .adv-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .adv-input-wrap input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: inherit;
+            font-size: 13px;
+            width: 100%;
+        }
+
+        .adv-note {
+            font-size: 9px;
+            color: #ef4444;
+            /* red for 'not wired' */
+            font-style: italic;
+        }
+
+        .adv-proxy {
+            color: #64748b;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <div class="container">
+            <header class="header">
+                <div>
+                    <h1 class="title">Paper Trade • Royalties</h1>
+                    <p class="subtitle">Tool to backtest actual streaming performance against modeled pricing for paper
+                        trading.</p>
+                </div>
+                <div class="badge">LIVE CSV</div>
+            </header>
+
+            <div class="grid">
+
+                <!-- Controls + Scorecard -->
+                <!-- Controls -->
+                <section class="card">
+                    <h2 class="card-title">Setup / Controls</h2>
+
+                    <div class="controls" style="flex-wrap: wrap; gap: 10px; align-items: center;">
+                        <div class="pill">
+                            <span style="font-size:12px; color:var(--text-muted);">Artist</span>
+                            <div class="select-wrap">
+                                <select id="artistSelect"></select>
+                            </div>
+                        </div>
+                        <div class="pill">
+                            <span style="font-size:12px; color:var(--text-muted);">Purchase</span>
+                            <input type="date" id="startDate"
+                                style="background:transparent; border:none; color:white; font-family:inherit;">
+                        </div>
+                        <div class="pill">
+                            <span style="font-size:12px; color:var(--text-muted);">Exit</span>
+                            <input type="date" id="endDate"
+                                style="background:transparent; border:none; color:white; font-family:inherit;">
+                        </div>
+
+                        <button class="btn" id="refreshBtn">Refresh Data</button>
+                        <span class="status" id="statusEl">Ready.</span>
+                    </div>
+
+                    <div class="advanced-toggle" id="advToggle">
+                        <span>Advanced Assumptions</span>
+                        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style="transition: transform 0.2s;"
+                            id="advArrow">
+                            <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </div>
+
+                    <div class="advanced-content" id="advContent">
+                        <div class="adv-pill">
+                            <span class="adv-label">Revenue Factor (Yield)</span>
+                            <div class="adv-input-wrap">
+                                <input type="number" id="revFactor" step="0.0001" value="0.0035">
+                                <span style="font-size:11px; color:#64748b;">$/Stream</span>
+                            </div>
+                        </div>
+
+                        <div class="adv-pill">
+                            <span class="adv-label">Par Yield Maturity</span>
+                            <div class="adv-input-wrap">
+                                <select id="yieldMaturity"
+                                    style="background:transparent; border:none; color:#fff; font-size:13px; outline:none; width:100%;">
+                                    <option value="1 Yr">1-Year Treasury</option>
+                                    <option value="2 Yr">2-Year Treasury</option>
+                                    <option value="3 Yr">3-Year Treasury</option>
+                                    <option value="5 Yr">5-Year Treasury</option>
+                                    <option value="7 Yr">7-Year Treasury</option>
+                                    <option value="10 Yr">10-Year Treasury</option>
+                                    <option value="20 Yr" selected>20-Year Treasury</option>
+                                    <option value="30 Yr">30-Year Treasury</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="adv-pill">
+                            <span class="adv-label">k-mu</span>
+                            <div class="adv-input-wrap">
+                                <input type="number" id="kMu" value="1000" step="1">
+                            </div>
+                        </div>
+
+                        <div class="adv-pill">
+                            <span class="adv-label">k-r</span>
+                            <div class="adv-input-wrap">
+                                <input type="number" id="kR" value="1.0" step="0.1">
+                            </div>
+                        </div>
+
+                        <div class="adv-pill">
+                            <span class="adv-label">k-sigma</span>
+                            <div class="adv-input-wrap">
+                                <input type="number" id="kSigma" value="19.10497317" step="0.0001">
+                            </div>
+                        </div>
+
+                        <div class="adv-pill">
+                            <span class="adv-label">Trailing Window</span>
+                            <div class="adv-input-wrap">
+                                <select
+                                    style="background:transparent; border:none; color:#fff; font-size:13px; outline:none; width:100%;">
+                                    <option value="3" selected>Trailing 3 Years</option>
+                                    <option value="2">Trailing 2 Years</option>
+                                    <option value="5">Trailing 5 Years</option>
+                                </select>
+                            </div>
+                            <span class="adv-note">Not yet wired - fixed at 3Y</span>
+                        </div>
+
+                        <div class="adv-pill">
+                            <span class="adv-label">Winsorize Lower (%)</span>
+                            <div class="adv-input-wrap">
+                                <input type="number" id="winLower" step="0.1" value="2.5">
+                                <span style="font-size:11px; color:#64748b;">%</span>
+                            </div>
+                        </div>
+
+                        <div class="adv-pill">
+                            <span class="adv-label">Winsorize Upper (%)</span>
+                            <div class="adv-input-wrap">
+                                <input type="number" id="winUpper" step="0.1" value="97.5">
+                                <span style="font-size:11px; color:#64748b;">%</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Rolling Valuation & Rates Chart -->
+                <section class="card">
+                    <h2 class="card-title" id="valChartTitle">Implied Valuation & 20-Year Treasury Rate</h2>
+                    <div class="chart-wrap" style="height: 320px;">
+                        <canvas id="rollingValChart"></canvas>
+                    </div>
+                    <p style="font-size:10px; color:#64748b; margin-top:10px; font-style:italic;">
+                        *Valuation series begins after 3 years of trailing data. Calculates daily 3y Trailing Mu/Sigma,
+                        L365 Revenue, and 20y UST.
+                    </p>
+                </section>
+
+                <!-- Daily Streaming Volume Chart -->
+                <section class="card">
+                    <h2 class="card-title">Daily Streaming Volume (Hold Period)</h2>
+                    <div class="chart-wrap" style="height: 240px;">
+                        <canvas id="streamChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- Valuation Scorecards (Blotter Style) -->
+                <section class="card">
+                    <h2 class="card-title">Valuation Blotter</h2>
+                    <div id="blotterContainer">
+                        <!-- Content Injected via JS -->
+                    </div>
+                </section>
+
+
+                <!-- SCORECARD & CHART COMMENTED OUT
+<section class="card">
+<h2 class="card-title">Scorecard</h2>
+<div class="summary-grid" id="summaryGrid"></div>
+<div class="plain-wrap">
+<p class="big-summary" id="plainSummary"></p>
+</div>
+</section>
+
+<section class="card">
+<h2 class="card-title">Royalties Timeline</h2>
+
+<div class="legend">
+<span><span class="dot" style="background: var(--chart-pre);"></span>Pre-buy</span>
+<span><span class="dot" style="background: var(--chart-hold);"></span>Hold period</span>
+</div>
+
+<div class="chart-wrap">
+<canvas id="royaltyChart"></canvas>
+</div>
+</section>
+-->
+                <!-- Forecast Backtest Section -->
+                <section class="card">
+                    <h2 class="card-title">Forecast Backtest (Purchase Assumptions vs Actuals)</h2>
+                    <div class="chart-wrap" style="height: 320px;">
+                        <canvas id="forecastChart"></canvas>
+                    </div>
+                    <div id="forecastDiagnostics" style="margin-top:20px;"></div>
+                </section>
+
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CSV endpoints
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQKp5R5JGrDAjMG9SN-lJCXlXgiEZAp6LHOpez2kKwc9fIXW8l9FmPeiHvvsEpdIVlAwd3ITNkw8rJI/pub?gid=2058263128&single=true&output=csv";
+        // Historical Yields
+        const CSV_RFR_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQEbLm_z7LeG-_XHkpIxyIrmPt0I2nxjSzped4G89ZSkkwvHqbwmnLPh06QEeXxSncX5Lvn13DSjjzY/pub?gid=1694198931&single=true&output=csv";
+
+        // DOM
+        const els = {
+            artistSelect: document.getElementById("artistSelect"),
+            startDate: document.getElementById("startDate"),
+            endDate: document.getElementById("endDate"),
+            revFactor: document.getElementById("revFactor"),
+            refreshBtn: document.getElementById("refreshBtn"),
+            statusEl: document.getElementById("statusEl"),
+            blotterContainer: document.getElementById("blotterContainer"),
+            streamChart: document.getElementById("streamChart"),
+            rateChart: document.getElementById("rateChart"),
+            rollingValChart: document.getElementById("rollingValChart"),
+            advToggle: document.getElementById("advToggle"),
+            advContent: document.getElementById("advContent"),
+            advArrow: document.getElementById("advArrow"),
+            winLower: document.getElementById("winLower"),
+            winUpper: document.getElementById("winUpper"),
+            kMu: document.getElementById("kMu"),
+            kR: document.getElementById("kR"),
+            kSigma: document.getElementById("kSigma"),
+            yieldMaturity: document.getElementById("yieldMaturity"),
+            valChartTitle: document.getElementById("valChartTitle"),
+            forecastChart: document.getElementById("forecastChart"),
+            forecastDiagnostics: document.getElementById("forecastDiagnostics")
+        };
+
+        // Formatters
+        const money0 = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+        const nf4 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 8 }); // For Log Returns
+        const df = new Intl.DateTimeFormat("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+            timeZone: "UTC" // CRITICAL: Fixes the transaction date - 1 offset
+        });
+        const isoDate = (d) => d.toISOString().split('T')[0];
+
+        /**
+        * Custom formatter for abbreviated numbers (m, k, b)
+        */
+        function formatAbbreviated(val, type = 'num', decimals = 1) {
+            if (val === null || val === undefined || isNaN(val)) return "–";
+            if (val === Infinity) return "∞";
+
+            const abs = Math.abs(val);
+            let suffix = '';
+            let formatted = val;
+
+            if (abs >= 1e9) {
+                formatted = val / 1e9;
+                suffix = 'b';
+            } else if (abs >= 1e6) {
+                formatted = val / 1e6;
+                suffix = 'm';
+            } else if (abs >= 1e3) {
+                // Only abbreviate thousands for 'streams' or if specifically needed
+                if (type === 'streams' || type === 'k') {
+                    formatted = val / 1e3;
+                    suffix = 'k';
+                }
+            }
+
+            let result = formatted.toLocaleString('en-US', {
+                minimumFractionDigits: suffix ? decimals : 0,
+                maximumFractionDigits: suffix ? decimals : 0
+            }) + suffix;
+
+            if (type === 'money') {
+                return (val < 0 ? '-$' : '$') + result.replace('-', '');
+            }
+            return result;
+        }
+
+        function setStatus(msg) { els.statusEl.textContent = msg; }
+
+        // CSV parsing
+        function parseCSV(text) {
+            // Strip BOM if present
+            if (text.charCodeAt(0) === 0xFEFF) {
+                text = text.slice(1);
+            }
+
+            const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
+            if (lines.length < 2) return [];
+
+            // Clean headers
+            const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ''));
+
+            return lines.slice(1).map(line => {
+                // Optimization: Simple split if no quotes found (faster/safers)
+                let values;
+                if (line.includes('"')) {
+                    values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                } else {
+                    values = line.split(",");
+                }
+
+                const obj = {};
+                headers.forEach((h, i) => {
+                    let val = values[i] ? values[i].trim() : "";
+                    if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+                    obj[h] = val;
+                });
+                return obj;
+            });
+        }
+
+        async function fetchCSV(url) {
+            // Check for file protocol restriction
+            if (window.location.protocol === 'file:') {
+                setStatus("Error: Browser blocked request. Run local server.");
+                throw new Error("Browsers block fetch() from 'file://'.");
+            }
+
+            try {
+                const res = await fetch(url, { cache: "no-store", mode: "cors" });
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                return await res.text();
+            } catch (e) {
+                throw new Error("Network/Fetch error: " + e.message);
+            }
+        }
+
+        // State
+        let allData = [];
+        let uniqueArtists = [];
+        let ratesData = []; // Array of { date: Date, rate20y: float }
+        let rateMap = new Map(); // YYYY-MM-DD -> float
+        let rateChartInst = null;
+        let streamChartInst = null;
+        let rollingValChartInst = null;
+        let forecastChartInst = null;
+
+        async function loadData() {
+            setStatus("Loading Data…");
+            try {
+                // Fetch both in parallel
+                const [mainText, rfrText] = await Promise.all([
+                    fetchCSV(CSV_URL),
+                    fetchCSV(CSV_RFR_URL)
+                ]);
+
+                // Process Rates
+                const rfrRaw = parseCSV(rfrText);
+                ratesData = rfrRaw.map(r => {
+                    const obj = { date: new Date(r["Date"]) };
+                    ["1 Yr", "2 Yr", "3 Yr", "5 Yr", "7 Yr", "10 Yr", "20 Yr", "30 Yr"].forEach(k => {
+                        obj[k] = parseFloat(r[k]) || null;
+                    });
+                    return obj;
+                }).filter(d => !isNaN(d.date.getTime()));
+
+                ratesData.sort((a, b) => a.date - b.date);
+
+                // Initial map build (default 20 Yr)
+                ratesData.forEach(r => {
+                    if (r["20 Yr"] !== null) rateMap.set(isoDate(r.date), r["20 Yr"]);
+                });
+
+                const raw = parseCSV(mainText);
+
+                // Parse numbers and dates once
+                allData = raw.map(r => ({
+                    date: new Date(r.Date),
+                    streams: parseFloat(r.Streams) || 0,
+                    artist: r.Artist
+                })).filter(d => !isNaN(d.date.getTime()) && d.artist);
+
+                uniqueArtists = [...new Set(allData.map(d => d.artist))].sort();
+
+                renderArtistSelect();
+
+                if (uniqueArtists.length > 0) {
+                    // 1. Calculate Dynamic Defaults (Global)
+                    const maxDateRaw = new Date(Math.max(...allData.map(d => d.date.getTime())));
+                    const minDateRaw = new Date(maxDateRaw);
+                    minDateRaw.setFullYear(minDateRaw.getFullYear() - 2);
+
+                    // 2. Set Inputs (Only on initial load)
+                    els.endDate.value = isoDate(maxDateRaw);
+                    els.startDate.value = isoDate(minDateRaw);
+
+                    // 3. Set Artist
+                    if (uniqueArtists.includes("Luis Miguel")) {
+                        els.artistSelect.value = "Luis Miguel";
+                    } else {
+                        els.artistSelect.value = uniqueArtists[0];
+                    }
+
+                    runAnalysis();
+                    setStatus("Ready (" + allData.length + " rows).");
+                } else {
+                    setStatus("No valid data found.");
+                }
+            } catch (err) {
+                console.error(err);
+                setStatus("Error: " + err.message);
+            }
+        }
+
+        function renderArtistSelect() {
+            els.artistSelect.innerHTML = "";
+            uniqueArtists.forEach(a => {
+                const opt = document.createElement("option");
+                opt.value = a;
+                opt.textContent = a;
+                els.artistSelect.appendChild(opt);
+            });
+        }
+
+        // Removed updateDateInputsFromData to prevent reset when toggling artists
+
+        // --- LOOKUPS & LOGIC ---
+
+        function getRateForDate(targetDate) {
+            // Check map first for exact match
+            const k = isoDate(targetDate);
+            if (rateMap.has(k)) return rateMap.get(k);
+
+            // Fallback: Lookback up to 7 days
+            // Since we updated to use rateMap, we can just check YYYY-MM-DD keys for previous days
+            // much faster than iterating the array.
+            const t = targetDate.getTime();
+
+            for (let i = 1; i <= 7; i++) {
+                const prev = new Date(t - (i * 86400000));
+                const pk = isoDate(prev);
+                if (rateMap.has(pk)) return rateMap.get(pk);
+            }
+            return null;
+        }
+
+        function getTrailingStats(targetDate, winsorizedData, years = 3) {
+            const endDate = targetDate.getTime();
+            const startDate = new Date(targetDate);
+            startDate.setFullYear(startDate.getFullYear() - years);
+            const sTime = startDate.getTime();
+
+            // Filter data in (Date - 3y, Date]
+            const windowData = winsorizedData.filter(d => {
+                const t = d.date.getTime();
+                return t > sTime && t <= endDate;
+            });
+
+            return calculateStats(windowData); // Uses winsorizedReturn
+        }
+
+        function getRateSeries(startDate, endDate) {
+            const points = [];
+            // Iterate daily
+            const cur = new Date(startDate);
+            const end = endDate.getTime();
+
+            let loops = 0;
+            const MAX_LOOPS = 20000; // ~54 years. Safety break.
+
+            while (cur.getTime() <= end) {
+                if (loops++ > MAX_LOOPS) {
+                    break;
+                }
+                const r = getRateForDate(cur);
+                points.push({ x: isoDate(cur), y: r });
+                cur.setDate(cur.getDate() + 1);
+            }
+            return points;
+        }
+
+        function getL365Revenue(targetDate, artistData, revFactor) {
+            const endDate = targetDate.getTime();
+            const startDate = endDate - (365 * 86400000);
+
+            // Sum streams in (startDate, endDate]
+            const streams = artistData.reduce((acc, curr) => {
+                const d = curr.date.getTime();
+                if (d > startDate && d <= endDate) {
+                    return acc + curr.streams;
+                }
+                return acc;
+            }, 0);
+
+            return streams * revFactor;
+        }
+
+        // --- VALUATION CORE ---
+
+        function calculateValuation(l365Rev, mu, sigma, r, kMu = 1000, kR = 1, kSigma = 19.10497317) {
+            if (l365Rev == null || mu == null || sigma == null || r == null) {
+                return { q: null, mult: null, npv: null };
+            }
+
+            // Annualize daily Mu and Sigma
+            const annualMu = mu * 365;
+            const annualSigma = sigma * Math.sqrt(365);
+
+            // Formula: q = (1 + (annualMu / kMu)) / (1 + (r / kR) + (annualSigma / kSigma))
+            const denominator = 1 + (r / kR) + (annualSigma / kSigma);
+            if (denominator === 0) return { q: null, mult: null, npv: null };
+
+            const q = (1 + (annualMu / kMu)) / denominator;
+
+            // Mult = q / (1 - q)
+            if (q >= 1) {
+                // Infinite value
+                return { q, mult: Infinity, npv: Infinity };
+            }
+
+            const mult = q / (1 - q);
+            const npv = l365Rev * mult;
+
+            return { q, mult, npv };
+        }
+
+        // --- MATH CORE ---
+
+        function calculateLogReturns(data) {
+            // data assumed sorted by date
+            const results = [];
+            for (let i = 0; i < data.length; i++) {
+                const curr = data[i];
+                let logRet = null;
+
+                if (i > 0) {
+                    const prev = data[i - 1];
+                    // Ensure consecutive days? Or just sequential records?
+                    // Requirement implies sequential records.
+                    if (prev.streams > 0 && curr.streams > 0) {
+                        logRet = Math.log(curr.streams / prev.streams);
+                    }
+                }
+
+                results.push({ ...curr, logReturn: logRet });
+            }
+            return results;
+        }
+
+        function getPercentile(values, p) {
+            if (values.length === 0) return 0;
+            const sorted = [...values].sort((a, b) => a - b);
+            const index = (sorted.length - 1) * p;
+            const lower = Math.floor(index);
+            const upper = Math.ceil(index);
+            const weight = index - lower;
+
+            if (upper >= sorted.length) return sorted[lower];
+            return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+        }
+
+        function winsorize(items, lowerP, upperP) {
+            // items is array of objects with .logReturn
+            // Extract just the valid numbers for percentile calc
+            const validReturns = items.filter(x => x.logReturn != null).map(x => x.logReturn);
+            if (validReturns.length === 0) return items;
+
+            const pLow = getPercentile(validReturns, lowerP);
+            const pHigh = getPercentile(validReturns, upperP);
+
+            // Clamp
+            return items.map(item => {
+                let wRet = item.logReturn;
+                if (wRet != null) {
+                    if (wRet < pLow) wRet = pLow;
+                    if (wRet > pHigh) wRet = pHigh;
+                }
+                return { ...item, winsorizedReturn: wRet, isClamped: (item.logReturn !== wRet) };
+            });
+        }
+
+        function calculateStats(items) {
+            const values = items.filter(x => x.winsorizedReturn != null).map(x => x.winsorizedReturn);
+            if (values.length === 0) return { mu: 0, sigma: 0, count: 0 };
+
+            const count = values.length;
+            const sum = values.reduce((a, b) => a + b, 0);
+            const mu = sum / count;
+
+            const sqDiffs = values.map(v => Math.pow(v - mu, 2));
+            const avgSqDiff = sqDiffs.reduce((a, b) => a + b, 0) / (count - 1); // Sample Stdev (N-1) usually preferred
+            const sigma = Math.sqrt(avgSqDiff);
+
+            return { mu, sigma, count };
+        }
+
+        // --- RENDER ---
+
+        function runAnalysis() {
+            // Update rateMap based on selected maturity
+            const mat = els.yieldMaturity.value;
+            rateMap.clear();
+            ratesData.forEach(r => {
+                if (r[mat] !== null) rateMap.set(isoDate(r.date), r[mat]);
+            });
+            els.valChartTitle.textContent = `Implied Valuation & ${mat} Treasury Rate`;
+
+            const artist = els.artistSelect.value;
+            // Validate dates
+            // Assuming data doesn't exist before 1900.
+            const sStr = els.startDate.value;
+            const eStr = els.endDate.value;
+
+            if (!sStr || !eStr) return; // Wait for full input
+
+            // Check years
+            const sYear = parseInt(sStr.split("-")[0]);
+            const eYear = parseInt(eStr.split("-")[0]);
+
+            if (isNaN(sYear) || sYear < 1980 || isNaN(eYear) || eYear < 1980) {
+                // Ignore weird dates during typing
+                return;
+            }
+
+            const sDate = new Date(els.startDate.value); // Midnight UTC assumption often
+            const eDate = new Date(els.endDate.value);
+
+            if (sDate > eDate) {
+                // Invalid range
+                return;
+            }
+            // Fix timezone offset for inputs if needed, but isoDate(d) expects valid date obj
+            // Usually inputs return YYYY-MM-DD. `new Date("2020-04-03")` is UTC.
+            // Our dataset parsing `new Date(r.Date)` depends on format.
+            // "2020-04-03" in CSV -> UTC.
+            // So comparison matches.
+
+            // Adjust inputs to ensure we match the dataset's midnight handling
+
+            // Filter for Table / Stats
+            const artistData = allData.filter(d => d.artist === artist).sort((a, b) => a.date - b.date);
+            const rangeData = artistData.filter(d => {
+                const dStr = isoDate(d.date);
+                return dStr >= sStr && dStr <= eStr;
+            });
+
+            // Calc Core
+            const withLog = calculateLogReturns(rangeData);
+            const winsorized = winsorize(withLog, 0.025, 0.975);
+            const stats = calculateStats(winsorized);
+
+            // Hold Period Calc
+            const revFactor = parseFloat(els.revFactor.value) || 0;
+            const totalStreams = rangeData.reduce((acc, curr) => acc + curr.streams, 0);
+            const totalRoyalties = totalStreams * revFactor;
+
+            // Valuation Inputs Lookups
+            // Need correct Date() objects for lookup.
+            // `new Date(sStr)` is UTC midnight. `new Date(eStr)` is UTC midnight.
+            const purchDateObj = new Date(sStr);
+            const exitDateObj = new Date(eStr);
+
+            const purchRate = getRateForDate(purchDateObj);
+            const exitRate = getRateForDate(exitDateObj);
+
+            const purchL365 = getL365Revenue(purchDateObj, artistData, revFactor);
+            const exitL365 = getL365Revenue(exitDateObj, artistData, revFactor);
+
+            // Trailing 3y Stats
+            const wLow = parseFloat(els.winLower.value) / 100;
+            const wHigh = parseFloat(els.winUpper.value) / 100;
+
+            const kMu = parseFloat(els.kMu.value) || 1.0;
+            const kR = parseFloat(els.kR.value) || 1.0;
+            const kSigma = parseFloat(els.kSigma.value) || 1.0;
+
+            const fullLog = calculateLogReturns(artistData);
+            const fullWins = winsorize(fullLog, wLow, wHigh);
+
+            const purchStats = getTrailingStats(purchDateObj, fullWins, 3);
+            const exitStats = getTrailingStats(exitDateObj, fullWins, 3);
+
+            // Pricing
+            const purchVal = calculateValuation(purchL365, purchStats.mu, purchStats.sigma, purchRate, kMu, kR, kSigma);
+            const exitVal = calculateValuation(exitL365, exitStats.mu, exitStats.sigma, exitRate, kMu, kR, kSigma);
+
+            // Investment Outcome stats
+            const outcome = {
+                streams: totalStreams,
+                roy: totalRoyalties,
+                multDelta: (exitVal.mult !== null && purchVal.mult !== null) ? (exitVal.mult - purchVal.mult) : null,
+                capGain: (exitVal.npv && purchVal.npv) ? (exitVal.npv - purchVal.npv) : null,
+                roi: null,
+                moic: null,
+                tvMoic: null,
+                royToPurch: (totalRoyalties && purchVal.npv) ? (totalRoyalties / purchVal.npv) : null
+            };
+
+            if (purchVal.npv && outcome.capGain !== null) {
+                const totalGain = totalRoyalties + outcome.capGain;
+                outcome.roi = totalGain / purchVal.npv;
+                outcome.moic = totalGain / purchVal.npv;
+                outcome.tvMoic = (purchVal.npv + totalGain) / purchVal.npv;
+            }
+
+            // Rates Impact (Counterfactual)
+            const baselineVal = calculateValuation(purchL365, purchStats.mu, purchStats.sigma, purchRate, kMu, kR, kSigma);
+            const ratesOnlyVal = calculateValuation(purchL365, purchStats.mu, purchStats.sigma, exitRate, kMu, kR, kSigma);
+            const ratesMultDelta = (ratesOnlyVal.mult !== null && baselineVal.mult !== null) ? (ratesOnlyVal.mult - baselineVal.mult) : null;
+
+            renderScorecards(purchDateObj, purchRate, purchL365, purchStats, purchVal, exitDateObj, exitRate, exitL365, exitStats, exitVal, outcome, baselineVal, ratesOnlyVal, ratesMultDelta, kMu, kR, kSigma);
+            renderStreamChart(rangeData);
+            renderRollingValChart(artistData, revFactor, purchDateObj, exitDateObj, kMu, kR, kSigma);
+            renderForecastBacktest(artistData, purchDateObj, exitDateObj, purchStats);
+        }
+
+        function renderForecastBacktest(artistData, startDate, endDate, purchStats) {
+            if (!els.forecastChart) return;
+
+            // 1. Aggregation for Actuals (Daily filtering first to capture partial months)
+            const sorted = [...artistData].sort((a, b) => a.date - b.date);
+            const rangeDaily = sorted.filter(d => d.date >= startDate && d.date <= endDate);
+            const windowActuals = aggregateMonthly(rangeDaily);
+
+            if (windowActuals.length === 0) return;
+
+            // Anchor: Find the month immediately preceding the window
+            const actualMonthlyFull = aggregateMonthly(sorted);
+            const anchorMonth = actualMonthlyFull.findLast(m => new Date(m.month + "-01") < new Date(windowActuals[0].month + "-01"));
+            const anchorValue = anchorMonth ? anchorMonth.streams : (windowActuals[0].streams / getMonthProration(startDate, true, windowActuals[0].month));
+
+            // 2. Monte Carlo Simulation
+            const monthsToSim = windowActuals.length;
+            const simulations = 1000;
+
+            // Scaling Daily Mu/Sigma to Monthly
+            const DAYS_PER_MONTH = 30.4375;
+            const muMonthly = purchStats.mu * DAYS_PER_MONTH;
+            const sigmaMonthly = purchStats.sigma * Math.sqrt(DAYS_PER_MONTH);
+
+            const alpha = 1 + muMonthly;
+            const aLow = Math.max(0, alpha - sigmaMonthly);
+            const aHigh = alpha + sigmaMonthly;
+
+            // Proration factors for partial months
+            const firstMonthProrate = getMonthProration(startDate, true, windowActuals[0].month);
+            const lastMonthProrate = getMonthProration(endDate, false, windowActuals[windowActuals.length - 1].month);
+
+            const allPaths = [];
+            const samplePaths = [];
+            for (let s = 0; s < simulations; s++) {
+                const path = [];
+                let current = anchorValue;
+                for (let m = 0; m < monthsToSim; m++) {
+                    const u = aLow + Math.random() * (aHigh - aLow);
+                    current *= u;
+
+                    // Apply proration to simulated values for comparison
+                    let valToPush = current;
+                    if (m === 0 && firstMonthProrate < 0.99) valToPush *= firstMonthProrate;
+                    if (m === monthsToSim - 1 && monthsToSim > 1 && lastMonthProrate < 0.99) valToPush *= lastMonthProrate;
+
+                    path.push(valToPush);
+                }
+                allPaths.push(path);
+                if (s < 15) samplePaths.push(path);
+            }
+
+            // 3. Percentiles (P5, Mean, P95)
+            const p5 = [], p95 = [], meanForecast = [];
+            for (let m = 0; m < monthsToSim; m++) {
+                const slices = allPaths.map(p => p[m]).sort((a, b) => a - b);
+                p5.push(slices[Math.floor(simulations * 0.05)]);
+                p95.push(slices[Math.floor(simulations * 0.95)]);
+                meanForecast.push(slices.reduce((a, b) => a + b, 0) / simulations);
+            }
+
+            // 4. Diagnostics
+            let inBand = 0, aboveP95 = 0, belowP5 = 0;
+            let totalAbsErrorPct = 0;
+            let totalBiasErrorPct = 0;
+
+            const tableActuals = windowActuals.map((a, i) => {
+                const act = a.streams;
+                const fMean = meanForecast[i];
+                if (act >= p5[i] && act <= p95[i]) inBand++;
+                else if (act > p95[i]) aboveP95++;
+                else belowP5++;
+
+                totalAbsErrorPct += Math.abs((act - fMean) / act);
+                totalBiasErrorPct += (act - fMean) / fMean;
+                return act;
+            });
+
+            const hitRate = (inBand / monthsToSim) * 100;
+            const mape = (totalAbsErrorPct / monthsToSim) * 100;
+            const bias = (totalBiasErrorPct / monthsToSim) * 100;
+
+            // 5. Render Chart
+            const labels = windowActuals.map(a => a.month);
+            if (forecastChartInst) forecastChartInst.destroy();
+
+            const datasets = [
+                {
+                    label: 'Actual Monthly Streams',
+                    data: tableActuals,
+                    borderColor: '#fff',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#fff',
+                    zIndex: 100
+                },
+                {
+                    label: 'Mean Forecast',
+                    data: meanForecast,
+                    borderColor: '#fbbf24',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    zIndex: 50
+                },
+                {
+                    label: 'P5-P95 Alpha Band',
+                    data: p95,
+                    borderColor: 'rgba(251, 191, 36, 0.2)',
+                    backgroundColor: 'rgba(251, 191, 36, 0.05)',
+                    fill: 3 + samplePaths.length, // Fill down to P5 Boundary
+                    pointRadius: 0,
+                    borderWidth: 0,
+                    zIndex: 5
+                }
+            ];
+
+            // Add sample paths
+            samplePaths.forEach((p, idx) => {
+                datasets.push({
+                    label: idx === 0 ? 'Monte Carlo Trials' : '',
+                    data: p,
+                    borderColor: 'rgba(251, 191, 36, 0.12)',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    zIndex: 10
+                });
+            });
+
+            datasets.push({
+                label: 'P5 Boundary',
+                data: p5,
+                borderColor: 'transparent',
+                pointRadius: 0,
+                fill: false,
+                zIndex: 5
+            });
+
+            forecastChartInst = new Chart(els.forecastChart, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                filter: item => item.text !== '',
+                                color: '#94a3b8',
+                                font: { size: 10 }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', callback: v => (v / 1e6).toFixed(1) + 'M' } },
+                        x: { display: true, ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 45 } }
+                    }
+                }
+            });
+
+            // 6. Diagnostics Table
+            const calloutColor = hitRate >= 70 ? "#2dd4bf" : (hitRate >= 40 ? "#fbbf24" : "#f87171");
+            const deviationText = aboveP95 > belowP5 ? "upside (above P95)" : (belowP5 > aboveP95 ? "downside (below P5)" : "volatility");
+
+            els.forecastDiagnostics.innerHTML = `
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px;">
+<div class="metric-block" style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px;">
+<div class="metric-label">Hit Rate (In-Band)</div>
+<div class="metric-value" style="color:${calloutColor}; font-size:20px;">${hitRate.toFixed(1)}%</div>
+<div style="font-size:9px; color:#64748b; margin-top:4px;">% of actuals within P5-P95</div>
+</div>
+<div class="metric-block" style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px;">
+<div class="metric-label">MAPE (Error)</div>
+<div class="metric-value" style="font-size:20px;">${mape.toFixed(1)}%</div>
+<div style="font-size:9px; color:#64748b; margin-top:4px;">Avg % error vs Mean forecast</div>
+</div>
+<div class="metric-block" style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px;">
+<div class="metric-label">Forecast Bias</div>
+<div class="metric-value" style="color:${bias > 20 ? '#f87171' : (bias < -20 ? '#2dd4bf' : '#fff')}; font-size:20px;">${(bias >= 0 ? "+" : "") + bias.toFixed(1)}%</div>
+<div style="font-size:9px; color:#64748b; margin-top:4px;">(+) Aggressive vs (-) Conservative</div>
+</div>
+<div class="metric-block" style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px;">
+<div class="metric-label">Out-of-Band</div>
+<div class="metric-value font-mono" style="font-size:13px; color:#94a3b8;">
+${aboveP95} Over / ${belowP5} Under
+</div>
+<div style="font-size:9px; color:#64748b; margin-top:4px;">Count of months outside band</div>
+</div>
+</div>
+<div style="margin-top:16px; padding:12px; border-left: 3px solid ${calloutColor}; background:rgba(255,255,255,0.02); font-size:12px; color:#e2e8f0;">
+“Actuals were within the forecast band in <strong>${hitRate.toFixed(1)}%</strong> of months.
+Most deviation occurred on the <strong>${deviationText}</strong>. Buy-date assumptions were
+${Math.abs(bias) < 10 ? "highly accurate" : (bias > 0 ? "aggressive" : "conservative")}.”
+</div>
+`;
+        }
+
+        /**
+        * Logic to handle "Bookend Months" (incomplete months at start/end of trade)
+        * Returns % of month active.
+        */
+        function getMonthProration(date, isStart, monthStr) {
+            const year = parseInt(monthStr.split("-")[0]);
+            const month = parseInt(monthStr.split("-")[1]);
+            const totalDays = new Date(year, month, 0).getDate();
+
+            if (isStart) {
+                // days from date to end of month
+                const activeDays = totalDays - date.getUTCDate() + 1;
+                return activeDays / totalDays;
+            } else {
+                // days from start of month to date
+                const activeDays = date.getUTCDate();
+                return activeDays / totalDays;
+            }
+        }
+
+        function aggregateMonthly(dailyData) {
+            const months = {};
+            dailyData.forEach(d => {
+                const m = d.date.toISOString().slice(0, 7); // YYYY-MM
+                if (!months[m]) months[m] = 0;
+                months[m] += d.streams;
+            });
+            return Object.keys(months).sort().map(m => ({ month: m, streams: months[m] }));
+        }
+
+        async function renderRollingValChart(artistData, revFactor, startDateObj, endDateObj, kMu = 1000, kR = 1, kSigma = 19.10497317) {
+            if (!els.rollingValChart) return;
+
+            // 1. Data Prep
+            const sorted = [...artistData].sort((a, b) => a.date - b.date);
+            if (sorted.length < 1095) return; // Need 3 years
+
+            const wLow = parseFloat(els.winLower.value) / 100;
+            const wHigh = parseFloat(els.winUpper.value) / 100;
+
+            const withLog = calculateLogReturns(sorted);
+            const winsorized = winsorize(withLog, wLow, wHigh);
+
+            // 2. Sliding Window Calculation
+            const rollingPoints = [];
+            const labels = [];
+
+            // Window sizes
+            const W_3Y = 1095;
+            const W_1Y = 365;
+
+            let sumLogRet = 0;
+            let sumLogRetSq = 0;
+            let sumStreams = 0;
+
+            // Optimization: Moving sums
+            for (let i = 0; i < winsorized.length; i++) {
+                const row = winsorized[i];
+
+                // Add current
+                if (row.winsorizedReturn != null) {
+                    sumLogRet += row.winsorizedReturn;
+                    sumLogRetSq += Math.pow(row.winsorizedReturn, 2);
+                }
+                sumStreams += row.streams;
+
+                // Remove out-of-window
+                if (i >= W_3Y) {
+                    const old = winsorized[i - W_3Y];
+                    if (old.winsorizedReturn != null) {
+                        sumLogRet -= old.winsorizedReturn;
+                        sumLogRetSq -= Math.pow(old.winsorizedReturn, 2);
+                    }
+                }
+
+                // L365 window is different (365 days)
+                let l365Sum = sumStreams;
+                if (i >= W_1Y) {
+                    // This is a naive way to get L365 if we only track one sum.
+                    // Let's actually use a second sum for L365 for accuracy.
+                }
+            }
+
+            // Let's do a slightly cleaner loop to avoid window mismatches
+            const streamsPrefixSum = [0];
+            const muPrefixSum = [0];
+            const muSqPrefixSum = [0];
+
+            for (let i = 0; i < winsorized.length; i++) {
+                streamsPrefixSum.push(streamsPrefixSum[i] + winsorized[i].streams);
+                const r = winsorized[i].winsorizedReturn || 0;
+                muPrefixSum.push(muPrefixSum[i] + r);
+                muSqPrefixSum.push(muSqPrefixSum[i] + (r * r));
+            }
+
+            const npvSeries = [];
+            const rateSeries = [];
+
+            for (let i = W_3Y; i <= winsorized.length; i++) {
+                const row = winsorized[i - 1];
+                const date = row.date;
+                const dStr = isoDate(date);
+
+                const count = W_3Y;
+                const sumMu = muPrefixSum[i] - muPrefixSum[i - W_3Y];
+                const sumMuSq = muSqPrefixSum[i] - muSqPrefixSum[i - W_3Y];
+                const mu = sumMu / count;
+                const variance = (sumMuSq / count) - (mu * mu);
+                const sigma = Math.sqrt(Math.max(0, variance));
+
+                const l365Streams = streamsPrefixSum[i] - streamsPrefixSum[Math.max(0, i - W_1Y)];
+                const rev = l365Streams * revFactor;
+                const r = getRateForDate(date);
+                const val = calculateValuation(rev, mu, sigma, r, kMu, kR, kSigma);
+
+                if (val.npv !== null && val.npv !== Infinity) {
+                    if (date >= startDateObj && date <= endDateObj) {
+                        npvSeries.push(val.npv);
+                        rateSeries.push(r ? r * 100 : null);
+                        labels.push(dStr);
+                    }
+                }
+            }
+
+            if (rollingValChartInst) rollingValChartInst.destroy();
+
+            rollingValChartInst = new Chart(els.rollingValChart, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Implied NPV ($)',
+                            data: npvSeries,
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: true,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: `${els.yieldMaturity.value} Treasury Rate (%)`,
+                            data: rateSeries,
+                            borderColor: 'rgba(148, 163, 184, 0.6)',
+                            borderWidth: 1,
+                            borderDash: [2, 2],
+                            pointRadius: 0,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: { color: '#94a3b8', boxWidth: 12, font: { size: 10 } }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: { display: false },
+                            ticks: {
+                                color: '#64748b',
+                                font: { size: 9 },
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 6
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#38bdf8', font: { size: 10 }, callback: v => '$' + (v / 1e6).toFixed(1) + 'M' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v.toFixed(1) + '%' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderStreamChart(data) {
+            if (!els.streamChart) return;
+            const lbs = data.map(d => isoDate(d.date));
+            const vals = data.map(d => d.streams);
+
+            if (streamChartInst) streamChartInst.destroy();
+
+            streamChartInst = new Chart(els.streamChart, {
+                type: "line",
+                data: {
+                    labels: lbs,
+                    datasets: [{
+                        label: "Daily Streams",
+                        data: vals,
+                        borderColor: "#fbbf24", // Gold
+                        backgroundColor: "rgba(251, 191, 36, 0.1)",
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        tension: 0.2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { grid: { color: "rgba(148, 163, 184, 0.1)" }, ticks: { color: "#64748b" } }
+                    }
+                }
+            });
+        }
+
+        function renderScorecards(pDate, pRate, pRev, pStats, pVal, eDate, eRate, eRev, eStats, eVal, outcome, baseVal, ratesVal, ratesDelta, kMu, kR, kSigma) {
+            els.blotterContainer.innerHTML = "";
+
+            const cards = [
+                { label: "Purchase", date: pDate, rate: pRate, rev: pRev, stats: pStats, val: pVal, color: "#a5b4fc" },
+                { label: "Exit", date: eDate, rate: eRate, rev: eRev, stats: eStats, val: eVal, color: "#2dd4bf" }
+            ];
+
+            cards.forEach(c => {
+                const dStr = df.format(c.date);
+
+                // Formatting Scaled Annual metrics for display
+                const scaledAnnualMu = (c.stats.mu * 365) / kMu;
+                const scaledAnnualSigma = (c.stats.sigma * Math.sqrt(365)) / kSigma;
+                const scaledRate = c.rate / kR;
+
+                const npvStr = formatAbbreviated(c.val.npv, 'money', 1);
+                const multStr = c.val.mult != null ? (c.val.mult === Infinity ? "∞" : c.val.mult.toFixed(2) + "x") : "–";
+                const muStr = scaledAnnualMu.toFixed(4);
+                const sigmaStr = (scaledAnnualSigma * 100).toFixed(2) + "%";
+                const revStr = formatAbbreviated(c.rev, 'money', 1);
+                const discountRate = scaledAnnualSigma + scaledRate;
+                const discountRateStr = discountRate ? (discountRate * 100).toFixed(2) + "%" : "–";
+
+                const html = `
+<div class="blotter-card" style="color: ${c.color}">
+<div class="blotter-header">
+<span>${c.label} Scorecard</span>
+<span class="blotter-date">${dStr}</span>
+</div>
+
+<div class="blotter-grid">
+<div class="metric-block metric-hero">
+<div class="metric-label">Implied NPV</div>
+<div class="metric-value">${npvStr}</div>
+</div>
+<div class="metric-block metric-hero">
+<div class="metric-label">Discount Rate</div>
+<div class="metric-value">${discountRateStr}</div>
+</div>
+<div class="metric-block metric-primary">
+<div class="metric-label">Multiple</div>
+<div class="metric-value" style="font-size:16px;">${multStr}</div>
+</div>
+<div class="metric-block metric-primary">
+<div class="metric-label">L365 Revenue</div>
+<div class="metric-value" style="font-size:16px;">${revStr}</div>
+</div>
+<div class="metric-block metric-secondary">
+<div class="metric-label">Trailing Sigma</div>
+<div class="metric-value">${sigmaStr}</div>
+</div>
+<div class="metric-block metric-secondary">
+<div class="metric-label">Trailing Mu</div>
+<div class="metric-value">${muStr}</div>
+</div>
+</div>
+</div>
+`;
+                els.blotterContainer.insertAdjacentHTML('beforeend', html);
+            });
+
+            // Performance Blotter Section
+            const cgStr = formatAbbreviated(outcome.capGain, 'money', 1);
+            const roiStr = outcome.roi !== null ? (outcome.roi * 100).toFixed(1) + "%" : "–";
+            const tmStr = outcome.tvMoic !== null ? outcome.tvMoic.toFixed(2) + "x" : "–";
+            const mdStr = outcome.multDelta !== null ? (outcome.multDelta >= 0 ? "+" : "") + outcome.multDelta.toFixed(2) + "x" : "–";
+            const royStr = formatAbbreviated(outcome.roy, 'money', 1);
+            const streamStr = formatAbbreviated(outcome.streams, 'streams', 1);
+            const yieldStr = outcome.royToPurch !== null ? (outcome.royToPurch * 100).toFixed(1) + "%" : "–";
+
+            const outcomeHtml = `
+<div class="blotter-card" style="color: #fbbf24; margin-top:24px;">
+<div class="blotter-header">
+<span>Investment Outcome Analysis</span>
+</div>
+
+<div class="blotter-grid">
+<div class="metric-block metric-hero">
+<div class="metric-label">ROI & Cap Gain</div>
+<div class="metric-value">${roiStr} <span class="metric-subvalue" style="margin-left:8px">${cgStr}</span></div>
+</div>
+<div class="metric-block metric-hero">
+<div class="metric-label">TV MOIC & Mult Delta</div>
+<div class="metric-value">${tmStr} <span class="metric-subvalue" style="margin-left:8px">${mdStr}</span></div>
+</div>
+<div class="metric-block metric-primary">
+<div class="metric-label">Cumul. Roy & Yield</div>
+<div class="metric-value">${royStr} <span class="metric-subvalue" style="margin-left:8px">${yieldStr}</span></div>
+</div>
+<div class="metric-block metric-secondary">
+<div class="metric-label">Cumul. Streams</div>
+<div class="metric-value">${streamStr}</div>
+</div>
+<div class="metric-block metric-secondary">
+<div class="metric-label">Total Return Analysis</div>
+<div class="metric-value" style="font-size:11px; opacity:0.8; font-family:inherit; line-height:1.2;">Yield + Capital Gain Performance</div>
+</div>
+</div>
+</div>
+`;
+            els.blotterContainer.insertAdjacentHTML('beforeend', outcomeHtml);
+
+            // Rates Impact Section
+            if (baseVal && ratesVal) {
+                const d1 = df.format(pDate);
+                const d2 = df.format(eDate);
+                const r1 = (pRate * 100).toFixed(2) + "%";
+                const r2 = (eRate * 100).toFixed(2) + "%";
+                const dM = ratesDelta !== null ? (ratesDelta >= 0 ? "+" : "") + ratesDelta.toFixed(2) + "x" : "–";
+
+                const ratesHtml = `
+<div class="blotter-card" style="color: #94a3b8; margin-top:24px; border-color: rgba(148, 163, 184, 0.2); padding: 16px;">
+<div class="blotter-header" style="color: #cbd5e1; margin-bottom:12px;">
+<span>Rates Impact (Counterfactual)</span>
+</div>
+
+<p style="font-size: 13px; color: #e2e8f0; line-height: 1.5; margin-bottom: 0;">
+Between <strong>${d1}</strong> (${r1}) and <strong>${d2}</strong> (${r2}),
+the rates-only impact to the multiple was <strong style="color: #fff; font-size: 16px;">${dM}</strong>,
+holding all other artist variables constant.
+</p>
+</div>
+`;
+                els.blotterContainer.insertAdjacentHTML('beforeend', ratesHtml);
+            }
+        }
+
+
+        function renderRateChart(start, end) {
+            if (!els.rateChart) return;
+            const points = getRateSeries(start, end);
+            const lbs = points.map(p => p.x);
+            const vals = points.map(p => p.y ? p.y * 100 : null);
+
+            if (rateChartInst) rateChartInst.destroy();
+
+            rateChartInst = new Chart(els.rateChart, {
+                type: "line",
+                data: {
+                    labels: lbs,
+                    datasets: [{
+                        label: "20y Treasury Yield (%)",
+                        data: vals,
+                        borderColor: "#94a3b8",
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        tension: 0.2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { grid: { color: "rgba(148, 163, 184, 0.1)" }, ticks: { color: "#64748b" } }
+                    }
+                }
+            });
+        }
+
+
+
+        // Events
+        els.artistSelect.addEventListener("change", () => {
+            runAnalysis();
+        });
+        els.startDate.addEventListener("change", runAnalysis);
+        els.endDate.addEventListener("change", runAnalysis);
+        els.revFactor.addEventListener("input", runAnalysis);
+        els.winLower.addEventListener("input", runAnalysis);
+        els.winUpper.addEventListener("input", runAnalysis);
+        els.kMu.addEventListener("input", runAnalysis);
+        els.kR.addEventListener("input", runAnalysis);
+        els.kSigma.addEventListener("input", runAnalysis);
+        els.yieldMaturity.addEventListener("change", runAnalysis);
+        els.refreshBtn.addEventListener("click", loadData);
+
+        els.advToggle.addEventListener("click", () => {
+            els.advContent.classList.toggle("open");
+            const isOpen = els.advContent.classList.contains("open");
+            els.advArrow.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
+        });
+
+        // Boot
+        (function init() {
+            loadData();
+        })();
+    </script>
+</body>
+
+</html>
