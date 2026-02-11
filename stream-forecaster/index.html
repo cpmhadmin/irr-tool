@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Forecaster</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-plugin-dragdata@2.2.3/dist/chartjs-plugin-dragdata.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Stream Forecaster</h1>
+        <div class="chart-container">
+            <canvas id="forecastChart"></canvas>
+            <canvas id="overlayCanvas"></canvas>
+        </div>
+        <div class="footer-controls">
+            <div class="input-group">
+                <label for="yAxisMax">Max Daily Streams:</label>
+                <input type="number" id="yAxisMax" value="250000" step="10000">
+            </div>
+            <div class="history-controls">
+                <button id="undoBtn" title="Undo (⌘Z)" disabled>Undo (⌘Z)</button>
+                <button id="redoBtn" title="Redo (⇧⌘Z)" disabled>Redo (⇧⌘Z)</button>
+            </div>
+            <div class="instructions">
+                <strong>Tip:</strong> Drag points to adjust manually. <strong>Double-Click</strong> two points to
+                interpolate.
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>

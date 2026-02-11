@@ -1,0 +1,158 @@
+:root {
+    --bg-color: #0F172A;
+    --card-bg: rgba(15, 23, 42, 0.85);
+    --border-color: rgba(148, 163, 184, 0.35);
+    --text-primary: #F7FAFC;
+    --text-secondary: #94A3B8;
+    --accent-teal: #4FD1C5;
+    --accent-green: #68D394;
+    --accent-red: #FCA5A5;
+    --glass-blur: blur(18px);
+}
+
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    background-image: radial-gradient(circle at 10% 20%, rgba(79, 209, 197, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(76, 175, 80, 0.05) 0%, transparent 40%);
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    background: var(--card-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    padding: 2.5rem;
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+    width: 90%;
+    max-width: 1100px;
+    margin: 20px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(to right, #ffffff, #94A3B8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+
+.footer-controls {
+    margin-top: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.history-controls {
+    display: flex;
+    gap: 24px;
+}
+
+.history-controls button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 6px 12px;
+    opacity: 0.6;
+    transition: all 0.3s ease;
+}
+
+.history-controls button:hover:not(:disabled) {
+    opacity: 1;
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+#undoBtn:hover:not(:disabled) {
+    color: var(--accent-teal);
+    box-shadow: none;
+}
+
+#redoBtn:hover:not(:disabled) {
+    color: var(--accent-green);
+    box-shadow: none;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.input-group:hover {
+    opacity: 1;
+}
+
+label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+input[type="number"] {
+    background: transparent;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    width: 100px;
+    outline: none;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+input[type="number"]:focus {
+    border-color: var(--accent-teal);
+    background: rgba(15, 23, 42, 0.3);
+}
+
+.chart-container {
+    position: relative;
+    height: 55vh;
+    min-height: 400px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.instructions {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    opacity: 0.8;
+}
+
+.instructions b,
+.instructions strong {
+    color: var(--accent-teal);
+    font-weight: 600;
+}
+
+#overlayCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
