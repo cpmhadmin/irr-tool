@@ -1,0 +1,693 @@
+:root {
+    --bg-color: #000000;
+    --card-bg: rgba(15, 23, 42, 0.85);
+    /* Keep card bg distinct */
+    --border-color: rgba(148, 163, 184, 0.35);
+    --text-primary: #F7FAFC;
+    --text-secondary: #94A3B8;
+    --accent-teal: #4FD1C5;
+    --accent-green: #68D394;
+    --accent-red: #FCA5A5;
+    --glass-blur: blur(18px);
+}
+
+/* ----------------------------------------------------------
+  PERFECT DOS VGA 437 — hosted on GitHub
+---------------------------------------------------------- */
+@font-face {
+    font-family: "Perfect DOS VGA 437";
+    src: url("https://raw.githubusercontent.com/cpmhadmin/irr-tool/main/fonts/PerfectDOSVGA437.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    background-image: none;
+    /* Pure black as requested */
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    background: var(--card-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    padding: 2.5rem;
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+    width: 95%;
+    /* Increased width percentage */
+    max-width: 1400px;
+    /* Increased max-width significantly to allow side-by-side */
+    margin: 20px;
+}
+
+/* ... existing code ... */
+
+/* Analysis Container (DSP + Charts) */
+.analysis-container {
+    display: flex;
+    gap: 20px;
+    /*    margin-top: 30px; */
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.dsp-section {
+    flex: 1.2;
+    min-width: 480px;
+    /* Reduced min-width */
+    background: rgba(15, 23, 42, 0.6);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.charts-section {
+    flex: 1;
+    min-width: 400px;
+    background: rgba(15, 23, 42, 0.6);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.charts-wrapper {
+    display: flex;
+    gap: 10px;
+    /* Reduced gap slightly */
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.chart-box {
+    flex: 1;
+    min-width: 220px;
+    /* Reduced min-width */
+    height: 250px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(to right, #ffffff, #94A3B8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+
+.footer-controls {
+    margin-top: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.history-controls {
+    display: flex;
+    gap: 24px;
+}
+
+.history-controls button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 6px 12px;
+    opacity: 0.6;
+    transition: all 0.3s ease;
+}
+
+.history-controls button:hover:not(:disabled) {
+    opacity: 1;
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+#undoBtn:hover:not(:disabled) {
+    color: var(--accent-teal);
+    box-shadow: none;
+}
+
+#redoBtn:hover:not(:disabled) {
+    color: var(--accent-green);
+    box-shadow: none;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.input-group:hover {
+    opacity: 1;
+}
+
+label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+input[type="number"] {
+    background: transparent;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    width: 100px;
+    outline: none;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+input[type="number"]:focus {
+    border-color: var(--accent-teal);
+    background: rgba(15, 23, 42, 0.3);
+}
+
+.chart-container {
+    position: relative;
+    height: 55vh;
+    min-height: 400px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.instructions {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    opacity: 0.8;
+}
+
+.project-controls {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+input[type="text"],
+input[type="date"] {
+    background: transparent;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    outline: none;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+input[type="text"]:focus,
+input[type="date"]:focus {
+    border-color: var(--accent-teal);
+    background: rgba(15, 23, 42, 0.3);
+}
+
+input[type="text"] {
+    width: 200px;
+}
+
+/* Ensure date picker icon is visible/styled if possible (browser dependent) */
+::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.6;
+    cursor: pointer;
+}
+
+::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+.input-error {
+    border-color: #FF0000 !important;
+    /* Fire Engine Red */
+    background: rgba(255, 0, 0, 0.1) !important;
+}
+
+.error-message {
+    width: 100%;
+    color: #FF0000;
+    /* Fire Engine Red */
+    font-size: 0.9rem;
+    margin-top: 8px;
+    text-align: center;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.2);
+}
+
+.dsp-name-input {
+    width: 90%;
+    /* Leave some space */
+    max-width: 140px;
+    /* Prevent it from getting too wide */
+    background: rgba(15, 23, 42, 0.3);
+    /* Slight background to show boundary */
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    /* Clear boundary */
+    border-radius: 4px;
+    color: var(--text-primary);
+    padding: 6px 8px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.2s;
+
+    /* Handle overflow */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dsp-name-input:focus,
+.dsp-name-input:hover {
+    border-color: var(--accent-teal);
+    background: rgba(15, 23, 42, 0.5);
+}
+
+/* Style for disabled inputs (The "Other" share field) */
+input:disabled {
+    background: rgba(15, 23, 42, 0.2);
+    /* Match other inputs bg */
+    border-color: rgba(148, 163, 184, 0.1);
+    color: var(--text-secondary);
+    font-style: italic;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.instructions b,
+.instructions strong {
+    color: var(--accent-teal);
+    font-weight: 600;
+}
+
+#overlayCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+}
+
+/* --- Table Styles --- */
+.tables-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-top: 2.5rem;
+    justify-content: center;
+}
+
+.table-wrapper {
+    flex: 1;
+    min-width: 300px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.table-scroll-container {
+    max-height: 400px;
+    /* Adjust height as needed */
+    overflow-y: auto;
+    border-radius: 6px;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.table-wrapper h3 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 1.2rem;
+    font-size: 1.1rem;
+    color: var(--accent-teal);
+    font-weight: 600;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    table-layout: fixed;
+    /* Fix layout to respect column widths */
+}
+
+th,
+td {
+    padding: 10px 12px;
+    text-align: right;
+    /* Aligns numbers nicely */
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Headers: sticky, truncate if needed but try to wrap */
+th {
+    background: rgba(15, 23, 42, 0.9);
+    /* Opaque background for sticky header */
+    color: var(--text-primary);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    backdrop-filter: blur(5px);
+    white-space: normal;
+    /* Allow wrapping */
+    overflow: visible;
+    text-overflow: clip;
+}
+
+/* Cells: allow content to flow, no ellipsis */
+td {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+
+
+th {
+    background: rgba(15, 23, 42, 0.9);
+    /* Opaque background for sticky header */
+    color: var(--text-primary);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    backdrop-filter: blur(5px);
+}
+
+tbody tr:hover {
+    background: rgba(79, 209, 197, 0.05);
+}
+
+/* Input styles for DSP table */
+.dsp-input {
+    background: transparent;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: var(--text-primary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    width: 90%;
+    /* Reduce from 100% to prevent overlap */
+    max-width: 100%;
+    text-align: right;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+}
+
+.dsp-input:focus {
+    border-color: var(--accent-teal);
+    outline: none;
+}
+
+.dsp-input:disabled {
+    opacity: 0.5;
+    border-color: transparent;
+    cursor: not-allowed;
+}
+
+/* Analysis Container (DSP + Charts) */
+.analysis-container {
+    display: flex;
+    gap: 20px;
+    /*    margin-top: 30px; */
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.dsp-section {
+    flex: 1.2;
+    min-width: 550px;
+    background: rgba(15, 23, 42, 0.6);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.charts-section {
+    flex: 1;
+    min-width: 400px;
+    background: rgba(15, 23, 42, 0.6);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.charts-wrapper {
+    display: flex;
+    gap: 15px;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    /* Allow wrapping on small screens */
+}
+
+.chart-box {
+    flex: 1;
+    min-width: 250px;
+    /* Ensure they don't get too squished */
+    height: 250px;
+    /* Increased height for better visibility */
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Update Table Styles for Analysis */
+.dsp-table-wrapper {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Adjust column widths for 5 columns */
+#dspTable th:nth-child(1),
+#dspTable td:nth-child(1) {
+    width: 25%;
+    text-align: left;
+}
+
+/* Name */
+#dspTable th:nth-child(2),
+#dspTable td:nth-child(2) {
+    width: 15%;
+}
+
+/* Share */
+#dspTable th:nth-child(3),
+#dspTable td:nth-child(3) {
+    width: 20%;
+}
+
+/* Value ($) */
+#dspTable th:nth-child(4),
+#dspTable td:nth-child(4) {
+    width: 20%;
+}
+
+/* Streams */
+#dspTable th:nth-child(5),
+#dspTable td:nth-child(5) {
+    width: 20%;
+}
+
+/* Revenue ($) */
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .tables-container {
+        flex-direction: column;
+    }
+
+    .analysis-container {
+        flex-direction: column;
+    }
+
+    .dsp-section,
+    .charts-section {
+        min-width: 100%;
+    }
+}
+
+/* DSP Table Footer */
+#dspTable tfoot tr {
+    background: rgba(15, 23, 42, 0.8);
+    border-top: 2px solid rgba(148, 163, 184, 0.3);
+}
+
+#dspTable tfoot td {
+    font-weight: 700;
+    color: var(--text-primary);
+    padding: 12px;
+}
+
+/* Simulation Controls */
+.simulation-controls {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.control-header h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    color: var(--accent-teal);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+}
+
+.control-grid {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.toggle-group {
+    opacity: 1;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+    accent-color: var(--accent-teal);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.range-row {
+    display: none;
+}
+
+/* Adjust Weekly Table for 7 columns */
+#weeklyTable {
+    font-size: 0.8rem;
+}
+
+#weeklyTable th,
+#weeklyTable td {
+    padding: 8px 6px;
+}
+
+#weeklyTable th {
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+.confidence-section {
+    margin-bottom: 2rem;
+}
+
+.confidence-section .chart-container {
+    position: relative;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+/* Fix duplicate font-face and existing styles */
+/* --- Typing Effect Styles --- */
+.title-container {
+    margin-top: 5vh;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.cpmh-tty {
+    font-family: "Perfect DOS VGA 437", monospace;
+    font-size: clamp(24px, 4vw, 36px);
+    line-height: 1.2;
+    color: #33ff33;
+    text-shadow: 0 0 10px rgba(51, 255, 51, 0.48);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: pre;
+}
+
+.cpmh-cursor {
+    display: inline-block;
+    width: 0.7ch;
+    height: 1.1em;
+    background: #33ff33;
+    animation: cpmh-blink 0.9s steps(1, end) infinite;
+    box-shadow: 0 0 10px rgba(51, 255, 51, 0.48);
+    margin-left: 2px;
+    vertical-align: bottom;
+}
+
+@keyframes cpmh-blink {
+    50% {
+        opacity: 0;
+    }
+}
+
+#dspTable tfoot td:first-child {
+    text-align: right;
+    padding-right: 20px;
+    color: var(--accent-teal);
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+}
+
+#dspTable tfoot .range-row td:first-child {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
