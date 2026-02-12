@@ -1,0 +1,2238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Luminate • Album Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/css/flag-icons.min.css" />
+    <style>
+        /* ----------------------------------------------------------
+          PERFECT DOS VGA 437 — hosted on GitHub
+        ---------------------------------------------------------- */
+        @font-face {
+            font-family: "Perfect DOS VGA 437";
+            src: url("https://raw.githubusercontent.com/cpmhadmin/irr-tool/main/fonts/PerfectDOSVGA437.woff2") format("woff2");
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        :root {
+            --bg-grad-start: #00040a;
+            --bg-grad-end: #000000;
+            --card-glass: rgba(15, 23, 42, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-primary: #38bdf8;
+            --accent-secondary: #818cf8;
+            --accent-success: #2dd4bf;
+            --accent-warning: #fbbf24;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+            color: var(--text-main);
+            background-color: var(--bg-grad-start);
+            background-image: linear-gradient(180deg, var(--bg-grad-start) 0%, var(--bg-grad-end) 100%);
+            margin: 0;
+            min-height: 100vh;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app {
+            width: 100%;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 1024px) {
+            .grid {
+                grid-template-columns: 3fr 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Upload States */
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .upload-box {
+            border: 2px dashed var(--card-border);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .upload-box:hover {
+            border-color: var(--accent-primary);
+            background: rgba(56, 189, 248, 0.05);
+        }
+
+        .upload-box.active {
+            border-color: var(--accent-success);
+            background: rgba(45, 212, 191, 0.05);
+        }
+
+        .upload-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .upload-section.collapsed {
+            display: none;
+        }
+
+        .subtle-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .subtle-pill:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        /* Scorecard */
+        .scorecard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-card.selected {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.1);
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .stat-diff {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .up {
+            color: var(--accent-success);
+        }
+
+        .down {
+            color: #f43f5e;
+        }
+
+        /* Controls */
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+            align-items: flex-end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        input[type="date"],
+        input[type="text"],
+        input[type="number"],
+        select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: #fff;
+            padding: 8px 12px;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            padding: 9px 20px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Chart */
+        .chart-container {
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        /* Geography Table */
+        .geo-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .geo-table th {
+            text-align: left;
+            padding: 8px;
+            color: var(--text-muted);
+            font-weight: 500;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .geo-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+
+        .country-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .fi {
+            border-radius: 2px;
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .rank-badge {
+            background: rgba(255, 255, 255, 0.1);
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 10px;
+            margin-right: 8px;
+        }
+
+        /* Geo Bar */
+        .geo-bar-wrap {
+            height: 24px;
+            background: #1e293b;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            margin: 12px 0;
+        }
+
+        .geo-bar-top {
+            background: #f43f5e;
+            height: 100%;
+            transition: width 0.5s;
+        }
+
+        .geo-bar-row {
+            background: #3b82f6;
+            height: 100%;
+            flex-grow: 1;
+            transition: width 0.5s;
+        }
+
+        .geo-legend {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 20px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 6, 23, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 32px;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .guide-step {
+            margin-bottom: 24px;
+        }
+
+        .guide-step h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: var(--accent-primary);
+            margin-bottom: 8px;
+            letter-spacing: 0.05em;
+        }
+
+        .guide-step p {
+            font-size: 14px;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
+
+        .guide-step ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+
+        .guide-step li {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* --- Typing Effect Styles --- */
+        .title {
+            font-family: "Perfect DOS VGA 437", monospace;
+            font-size: clamp(24px, 4vw, 36px);
+            line-height: 1.2;
+            color: #33ff33;
+            text-shadow: 0 0 10px rgba(51, 255, 51, 0.48);
+            background: none !important;
+            -webkit-background-clip: initial !important;
+            background-clip: initial !important;
+            -webkit-text-fill-color: initial !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: pre;
+            min-height: 1.5em;
+        }
+
+        #appTitleText {
+            display: inline;
+        }
+
+        .cpmh-cursor {
+            display: inline-block;
+            width: 0.7ch;
+            height: 1.1em;
+            background: #33ff33;
+            animation: cpmh-blink 0.9s steps(1, end) infinite;
+            box-shadow: 0 0 10px rgba(51, 255, 51, 0.48);
+            margin-left: 2px;
+            vertical-align: bottom;
+        }
+
+        @keyframes cpmh-blink {
+            50% {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal" onclick="toggleModal()">&times;</button>
+            <h2 style="margin-top: 0; margin-bottom: 24px; font-size: 24px;">How to Use This App</h2>
+
+            <div class="guide-step">
+                <h3>1. Data Extraction (Luminate)</h3>
+                <p>This app assists in the analysis of album streaming performance. To get started:</p>
+                <ul>
+                    <li>Log in to **Luminate** and search for the album you wish to view.</li>
+                    <li>Set the market (e.g., Global, Worldwide) and date range (e.g., Jan 1, 2020 to present).</li>
+                    <li>Scroll down to the <strong>"Activity Over Time"</strong> section.</li>
+                    <li>Click the <strong>ellipses "..."</strong> in the top right of that section and select
+                        <strong>"Export to CSV"</strong>.
+                    </li>
+                    <li>Repeat these exact steps for the <strong>"Activity By Location"</strong> section just beneath
+                        it.</li>
+                </ul>
+            </div>
+
+            <div class="guide-step">
+                <h3>2. Uploading Data</h3>
+                <p>Simply click the "Streams Over Time" and "Geography" boxes to upload your exported files. The app
+                    will automatically:</p>
+                <ul>
+                    <li>Extract artist and album metadata from the filenames.</li>
+                    <li>Filter out pre-release leading zeros.</li>
+                    <li>Configure the initial analysis window.</li>
+                </ul>
+            </div>
+
+            <div class="guide-step">
+                <h3>3. Analysis Window</h3>
+                <p>Use the date inputs to isolate specific periods of the campaign. The dashboard updates in real-time
+                    as you adjust these ranges.</p>
+            </div>
+
+            <div class="guide-step">
+                <h3>4. Understanding the Scorecard</h3>
+                <ul>
+                    <li><strong>Window Total:</strong> All streams within your selected date range.</li>
+                    <li><strong>Daily Avg:</strong> The average daily streaming volume for that specific window.</li>
+                    <li><strong>Trailing Metrics (7D/30D/365D):</strong> Performance snapshots looking back from the
+                        *end* of your selected window.</li>
+                </ul>
+            </div>
+
+            <div class="guide-step">
+                <h3>5. Geographic Analysis</h3>
+                <p>The "Market Concentration" bar shows the percentage of streams from your Top 1 territory vs the Rest
+                    of World (ROW). The pie chart provides a detailed breakdown of your secondary markets.</p>
+            </div>
+
+            <div class="guide-step">
+                <h3>6. Statistical Concepts (Steady State)</h3>
+                <p>The "Advanced Assumptions" panel uses statistical modeling to detect when an album has entered its
+                    long-tail "Settled" state:</p>
+                <ul>
+                    <li><strong>μ (Mu):</strong> The underlying growth or decay rate. A positive μ suggests organic
+                        growth, while a negative μ indicates a stable performance trajectory.</li>
+                    <li><strong>σ (Sigma):</strong> Volatility. It measures the "bumpiness" of daily data. High sigma
+                        indicates frequent spikes (often from playlisting), while low sigma means predictable
+                        consistency.
+                    </li>
+                </ul>
+            </div>
+
+            <div class="guide-step">
+                <h3>7. Future Forecasting</h3>
+                <p>The "Forward Projection" chart uses <strong>Monte Carlo Simulations</strong> to run 1,000 independent
+                    future paths based on your steady-state data:</p>
+                <ul>
+                    <li><strong>P95 (Upper):</strong> Optimistic "Best Case" scenario (top 5% of outcomes).</li>
+                    <li><strong>Mean (Center):</strong> The mathematically expected average path.</li>
+                    <li><strong>P5 (Lower):</strong> Conservative "Floor" (bottom 5% of outcomes).</li>
+                </ul>
+            </div>
+
+            <div class="guide-step" style="margin-bottom: 0;">
+                <h3>8. Analyzing a New Album</h3>
+                <p>To analyze a different album, simply refresh the page or click the upload boxes again to swap the
+                    files. The app will reset all calculations for the new data set.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="app">
+        <header class="header">
+            <div>
+                <h1 class="title" id="appTitle"><span id="appTitleText"></span><span class="cpmh-cursor"></span></h1>
+                <p class="subtitle" id="metadataDisplay">Upload CSVs to begin analysis</p>
+
+                <div id="subtleUploads" class="hidden" style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button class="subtle-pill" onclick="document.getElementById('streamsInput').click()">
+                        <span id="streamsStatusText">No Streams Data</span> <span id="streamsStatusIcon"
+                            style="margin-left:4px; color:#f43f5e">❌</span>
+                    </button>
+                    <button class="subtle-pill" onclick="document.getElementById('geoInput').click()">
+                        <span id="geoStatusText">No Geography Data</span> <span id="geoStatusIcon"
+                            style="margin-left:4px; color:#f43f5e">❌</span>
+                    </button>
+                </div>
+            </div>
+            <div id="helpBtn" style="cursor: pointer; display: flex; align-items: center; gap: 8px;"
+                onclick="toggleModal()">
+                <span
+                    style="background: rgba(255,255,255,0.1); color: #fff; padding: 6px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; border: 1px solid var(--card-border);">HOW
+                    TO USE?</span>
+            </div>
+        </header>
+
+        <div class="upload-section" id="uploadArea">
+            <div class="upload-box" id="streamsBox" onclick="document.getElementById('streamsInput').click()">
+                <label class="upload-label" id="streamsLabel">Streams Over Time CSV</label>
+                <p class="upload-hint">Click to upload</p>
+                <input type="file" id="streamsInput" class="hidden" accept=".csv">
+            </div>
+            <div class="upload-box" id="geoBox" onclick="document.getElementById('geoInput').click()">
+                <label class="upload-label" id="geoLabel">Geography Summary CSV</label>
+                <p class="upload-hint">Click to upload</p>
+                <input type="file" id="geoInput" class="hidden" accept=".csv">
+            </div>
+        </div>
+
+        <div id="dashboard" class="hidden">
+            <div class="grid">
+                <div class="main-col">
+                    <section class="card">
+                        <div class="card-title">Performance Window</div>
+                        <div class="scorecard-grid" id="scorecard">
+                            <!-- JS will populate -->
+                        </div>
+
+                        <div class="controls-row">
+
+                            <div class="input-group">
+                                <label>Analysis Window</label>
+                                <div style="display:flex; gap:8px;">
+                                    <input type="date" id="startDate" placeholder="Start">
+                                    <input type="date" id="endDate" placeholder="End">
+                                </div>
+                            </div>
+                            <button class="btn" onclick="exportAnalysis()" style="width: 100%;">Export Analysis</button>
+                        </div>
+
+                        <!-- Advanced Assumptions -->
+                        <div style="margin-top: 12px;">
+                            <button class="subtle-pill" onclick="toggleAdvanced()"
+                                style="background: rgba(255,255,255,0.03);">
+                                ⚙️ Advanced Assumptions
+                            </button>
+                            <div id="advancedPanel" class="hidden"
+                                style="margin-top: 12px; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--card-border);">
+                                <div class="grid"
+                                    style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px;">
+                                    <div class="input-group">
+                                        <label>Winsorize Lower %</label>
+                                        <input type="number" id="winLower" value="2.5" step="0.5" min="0" max="10">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Winsorize Upper %</label>
+                                        <input type="number" id="winUpper" value="97.5" step="0.5" min="90" max="100">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Stability Threshold (|μ| → 0)</label>
+                                        <input type="number" id="stabilityThreshold" value="0.0005" step="0.0001"
+                                            min="0">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>7-Day Smoothing (Anti-Seasonality)</label>
+                                        <select id="seasonalitySmoothing">
+                                            <option value="none">None (Raw Daily)</option>
+                                            <option value="7d" selected>7-Day Rolling Mean</option>
+                                        </select>
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Forecast Term (Years)</label>
+                                        <input type="number" id="forecastTerm" value="15" step="1" min="1" max="30">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Revenue per Stream ($)</label>
+                                        <input type="number" id="revFactor" value="0.0035" step="0.0001" min="0">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Mean-Reversion Speed (θ)</label>
+                                        <input type="number" id="thetaMR" value="0.03" step="0.005" min="0.001" max="1">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Catalog Decay Rate (κ %/yr)</label>
+                                        <input type="number" id="kappaDecay" value="5" step="1" min="0" max="50">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chart-container">
+                            <canvas id="streamsChart"></canvas>
+                        </div>
+                    </section>
+
+                    <!-- Monte Carlo Simulation Engine -->
+                    <section class="card" style="margin-top: 20px;">
+                        <div class="card-title">Forward Forecast (Monte Carlo)</div>
+                        <div class="grid" style="grid-template-columns: 1fr; gap: 20px;">
+                            <div style="height: 300px; position: relative;">
+                                <div class="stat-label">Projected Daily Streams (P5 / Mean / P95)</div>
+                                <canvas id="forecastChart"></canvas>
+                            </div>
+
+                            <div
+                                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; border-top: 1px solid var(--card-border); padding-top: 20px;">
+                                <div>
+                                    <div class="stat-label" style="text-transform: none;">Regime Parameters (Forecast
+                                        Inputs)
+                                    </div>
+                                    <div id="alphaBandDetails" style="font-size: 13px; line-height: 1.6;">
+                                        <!-- Populate via JS -->
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="stat-label" style="text-transform: none;">Simulation Summary</div>
+                                    <div id="simDiagnostics"
+                                        style="font-size: 13px; line-height: 1.6; color: var(--text-muted);">
+                                        <!-- Populate via JS -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- K-Variables Panel -->
+                            <div style="border-top: 1px solid var(--card-border); margin-top: 16px; padding-top: 12px;">
+                                <button class="subtle-pill" onclick="toggleKVariables()"
+                                    style="background: rgba(255,255,255,0.03); margin-bottom: 8px;">
+                                    📐 K-Variables (Annualized Regime)
+                                </button>
+                                <div id="kVariablesPanel" class="hidden"
+                                    style="padding: 16px; background: rgba(0,0,0,0.25); border-radius: 12px; border: 1px solid var(--card-border);">
+                                    <div
+                                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+                                        <div>
+                                            <div class="stat-label" style="font-size: 9px; text-transform: none;">K-Mu
+                                                (Annualized Drift = μ × 365)</div>
+                                            <div id="kMuValue" class="stat-value"
+                                                style="font-size: 18px; color: var(--text-muted);">--</div>
+                                        </div>
+                                        <div>
+                                            <div class="stat-label" style="font-size: 9px; text-transform: none;">
+                                                K-Sigma (Annualized Vol = σ × √365)</div>
+                                            <div id="kSigmaValue" class="stat-value"
+                                                style="font-size: 18px; color: var(--text-muted);">--</div>
+                                        </div>
+                                        <div>
+                                            <div class="input-group">
+                                                <label style="font-size: 9px;">K-r (Risk-Free Rate %)</label>
+                                                <input type="number" id="kRiskFree" value="4.25" step="0.25" min="0"
+                                                    max="20" style="max-width: 120px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="kDerivedMetrics"
+                                        style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 13px; line-height: 1.8; color: var(--text-muted);">
+                                        <!-- Populate via JS: Sharpe ratio, excess return, etc. -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Statistical Engine Diagnostics -->
+                    <section class="card" style="margin-top: 20px;">
+                        <div class="card-title">Statistical Engine & Regime Detection</div>
+                        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div>
+                                <div class="stat-label">Stability Detection</div>
+                                <div id="regimeStatus" style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
+                                    Waiting for analysis...</div>
+                                <div id="regimeDate" style="font-size: 12px; color: var(--text-muted);">Long-tail start
+                                    date: --</div>
+                                <div id="analysisWindowDisplay"
+                                    style="font-size: 11px; color: var(--accent-primary); margin-top: 4px; font-weight: 500;">
+                                    Analysis Window: <span id="analysisWindowValue">--</span></div>
+
+                                <div style="margin-top: 20px;">
+                                    <div class="stat-label">ALPHA BAND (LOCKED <span
+                                            style="text-transform: none;">μ/σ</span>)</div>
+                                    <div id="alphaStats"
+                                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                        <div class="stat-card" style="padding: 12px;">
+                                            <div class="stat-label" style="font-size: 9px; text-transform: none;">Steady
+                                                state Mu (Ann. Returns)</div>
+                                            <div id="steadyMu" class="stat-value" style="font-size: 16px;">--</div>
+                                        </div>
+                                        <div class="stat-card" style="padding: 12px;">
+                                            <div class="stat-label" style="font-size: 9px; text-transform: none;">Steady
+                                                state Sigma (Ann. Vol)</div>
+                                            <div id="steadySigma" class="stat-value" style="font-size: 16px;">--</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="height: 180px; display: flex; flex-direction: column; gap: 12px;">
+                                <div>
+                                    <div class="stat-label">Log Return Distribution</div>
+                                    <div style="height: 80px;"><canvas id="distChart"></canvas></div>
+                                </div>
+                                <div>
+                                    <div class="stat-label">Settling Slope (<span style="text-transform: none;">Ann.
+                                            µ</span>
+                                        → 0)</div>
+                                    <div style="height: 80px;"><canvas id="settlingChart"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 20px; border-top: 1px solid var(--card-border); padding-top: 16px;">
+                            <div class="stat-label">ROLLING HORIZON SIGNALS (<span
+                                    style="text-transform: none;">μ</span>)</div>
+                            <div id="horizonSignals"
+                                style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                                <!-- Populate via JS -->
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="side-col" style="display: flex; flex-direction: column;">
+                    <section class="card" style="margin-bottom: 20px;">
+                        <div class="card-title">Project Milestones</div>
+                        <div id="milestones">
+                            <!-- JS will populate -->
+                        </div>
+                    </section>
+
+                    <section class="card" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+                        <div class="card-title">Geography Analysis</div>
+
+                        <div class="stat-label">Market Concentration (Top vs ROW)</div>
+                        <div class="geo-bar-wrap">
+                            <div id="geoBarTop" class="geo-bar-top"></div>
+                            <div id="geoBarRow" class="geo-bar-row"></div>
+                        </div>
+                        <div class="geo-legend">
+                            <span style="color:#f43f5e;" id="geoTopLabel">Top 1: --%</span>
+                            <span style="color:#3b82f6;" id="geoRowLabel">ROW: --%</span>
+                        </div>
+
+                        <div style="height: 200px; margin-bottom: 20px;">
+                            <canvas id="rowPieChart"></canvas>
+                        </div>
+
+
+                        <div
+                            style="flex: 1; overflow-y: auto; border-top: 1px solid var(--card-border); padding-top:12px; min-height: 150px;">
+                            <table class="geo-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Country</th>
+                                        <th style="text-align:right">Streams</th>
+                                        <th style="text-align:right">% Share</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="geoTableBody"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Typing Title ---
+        const titleText = "Luminate Album Analysis";
+        const tEl = document.getElementById('appTitleText');
+        const cur = document.querySelector('.cpmh-cursor');
+
+        if (tEl) {
+            let i = 0;
+            const tk = () => {
+                tEl.textContent = titleText.slice(0, i++);
+                if (i <= titleText.length) {
+                    setTimeout(tk, 60);
+                } else if (cur) {
+                    setTimeout(() => {
+                        cur.style.opacity = '0';
+                        setTimeout(() => { cur.style.display = 'none'; }, 1000);
+                    }, 3000);
+                }
+            };
+            setTimeout(tk, 500);
+        }
+
+        let streamsData = [];
+        let geoData = [];
+        let albumMeta = {};
+        let chart = null;
+        let pieChart = null;
+        let firstActive = null;
+        let peak = null;
+        let lastForecast = null;
+        let fullForecastData = [];
+
+        // Global analysis state for cross-functional access
+        let windowDataTotalGlobal = 0;
+        let windowDailyAvgGlobal = 0;
+        let windowDaysGlobal = 0;
+        let trailing7Global = {};
+        let trailing30Global = {};
+        let trailing365Global = {};
+        let windowStartGlobal = "";
+        let windowEndGlobal = "";
+        let allTimeTotalGlobal = 0;
+
+        const countryMap = {
+            "usa": "us", "united states": "us", "united states of america": "us",
+            "uk": "gb", "united kingdom": "gb", "great britain": "gb",
+            "canada": "ca", "australia": "au", "germany": "de", "france": "fr",
+            "brazil": "br", "mexico": "mx", "japan": "jp", "italy": "it",
+            "spain": "es", "netherlands": "nl", "sweden": "se", "norway": "no",
+            "denmark": "dk", "finland": "fi", "portugal": "pt", "ireland": "ie",
+            "new zealand": "nz", "switzerland": "ch", "austria": "at", "belgium": "be",
+            "poland": "pl", "russia": "ru", "turkey": "tr", "india": "in",
+            "china": "cn", "south korea": "kr", "taiwan": "tw", "hong kong": "hk",
+            "singapore": "sg", "malaysia": "my", "indonesia": "id", "philippines": "ph",
+            "thailand": "th", "vietnam": "vn", "argentina": "ar", "colombia": "co",
+            "chile": "cl", "peru": "pe", "south africa": "za", "nigeria": "ng",
+            "egypt": "eg", "uae": "ae", "saudi arabia": "sa", "israel": "il",
+            "greece": "gr", "czech republic": "cz", "hungary": "hu", "romania": "ro",
+            "iceland": "is", "luxembourg": "lu"
+        };
+
+        function getIso(country) {
+            if (!country) return null;
+            const c = country.toLowerCase().trim();
+            return countryMap[c] || null;
+        }
+
+        function toggleModal() {
+            document.getElementById('helpModal').classList.toggle('active');
+        }
+
+        const nf = new Intl.NumberFormat();
+        const nfc = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+        const df = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const money = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+
+        // --- Performance & Event Utilities ---
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        const debouncedUpdate = debounce(updateAnalysis, 400);
+
+        document.getElementById('streamsInput').addEventListener('change', e => handleFileUpload(e, 'streams'));
+        document.getElementById('geoInput').addEventListener('change', e => handleFileUpload(e, 'geo'));
+
+        // Automatic updates for analysis on input change
+        ['startDate', 'endDate', 'winLower', 'winUpper', 'stabilityThreshold', 'seasonalitySmoothing', 'forecastTerm', 'revFactor', 'kRiskFree', 'thetaMR', 'kappaDecay'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', updateAnalysis); // Immediate for dropdowns
+            if (el && el.type === 'number') {
+                el.removeEventListener('change', updateAnalysis);
+                el.addEventListener('input', debouncedUpdate);
+            }
+        });
+
+        async function handleFileUpload(event, type) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const text = await file.text();
+
+            if (type === 'streams') {
+                parseStreamsFile(text, file.name);
+            } else {
+                parseGeoFile(text);
+            }
+
+            checkReady();
+        }
+
+        function parseStreamsFile(text, filename) {
+            // Extract Meta from Filename
+            // Seek Shelter_Iceage_Activity Over Time_MRELG325E7C3D650C439F89AF14F017E26FB5_1769437711376
+            const metaParts = filename.replace('.csv', '').split('_');
+            if (metaParts.length >= 2) {
+                albumMeta = {
+                    album: metaParts[0].trim(),
+                    artist: metaParts[1].trim(),
+                    description: (metaParts[2] || "Activity Analysis").trim(),
+                    luminateId: (metaParts[3] || "").trim()
+                };
+                document.title = `${albumMeta.artist} - ${albumMeta.album} | Luminate Analysis`;
+                const titleEl = document.getElementById('appTitleText');
+                if (titleEl) titleEl.innerText = `${albumMeta.artist}: ${albumMeta.album}`;
+                const metaEl = document.getElementById('metadataDisplay');
+                if (metaEl) metaEl.innerText = albumMeta.description;
+                const badgeEl = document.getElementById('albumBadge');
+                if (badgeEl) badgeEl.innerText = albumMeta.album;
+                const infoEl = document.getElementById('fileInfo');
+                if (infoEl) infoEl.classList.remove('hidden');
+            }
+
+            const rows = parseCSV(text);
+            const dataRows = [];
+            let headerFound = false;
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i].map(c => (c || "").trim());
+                if (!headerFound) {
+                    // Check if this is the header row (Week, Date, Streams...)
+                    if (row.some(c => c.toLowerCase() === 'week') && row.some(c => c.toLowerCase() === 'date')) {
+                        headerFound = true;
+                    }
+                    continue;
+                }
+
+                if (headerFound && row.length >= 3) {
+                    const dateStr = row[1];
+                    // Skip empty dates or non-date rows
+                    if (!dateStr || !dateStr.includes('-')) continue;
+
+                    const streams = parseInt(row[2].replace(/,/g, '')) || 0;
+                    dataRows.push({
+                        date: new Date(dateStr + 'T00:00:00'),
+                        dateStr: dateStr,
+                        streams
+                    });
+                }
+            }
+
+            // Sort by date ascending
+            streamsData = dataRows.sort((a, b) => a.date - b.date);
+
+            // Filter out leading zeros (Pre-release data)
+            const firstNonZeroIndex = streamsData.findIndex(d => d.streams > 0);
+            if (firstNonZeroIndex !== -1) {
+                streamsData = streamsData.slice(firstNonZeroIndex);
+            }
+
+            // Filter out trailing zeros (Post-campaign/Empty data)
+            const lastNonZeroIndex = [...streamsData].reverse().findIndex(d => d.streams > 0);
+            if (lastNonZeroIndex !== -1) {
+                const actualIndex = streamsData.length - 1 - lastNonZeroIndex;
+                streamsData = streamsData.slice(0, actualIndex + 1);
+            }
+
+            // Assign "Days on Market"
+            if (streamsData.length > 0) {
+                const firstDate = streamsData[0].date;
+                streamsData.forEach(d => {
+                    d.daysOnMarket = Math.floor((d.date - firstDate) / (1000 * 60 * 60 * 24)) + 1;
+                });
+            }
+        }
+
+        function parseGeoFile(text) {
+            const rows = parseCSV(text);
+            const dataRows = [];
+            let headerFound = false;
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i].map(c => (c || "").trim());
+                if (!headerFound) {
+                    if (row.some(c => c.toLowerCase() === 'rank') && row.some(c => c.toLowerCase() === 'country')) {
+                        headerFound = true;
+                    }
+                    continue;
+                }
+                if (headerFound && row.length >= 3) {
+                    const rank = row[0];
+                    const country = row[1];
+                    const streams = parseInt(row[2].replace(/,/g, '')) || 0;
+                    if (rank && country) {
+                        dataRows.push({ rank, country, streams });
+                    }
+                }
+            }
+            geoData = dataRows;
+        }
+
+        function checkReady() {
+            const hasStreams = streamsData.length > 0;
+            const hasGeo = geoData.length > 0;
+
+            if (hasStreams || hasGeo) {
+                document.getElementById('uploadArea').classList.add('collapsed');
+                document.getElementById('subtleUploads').classList.remove('hidden');
+
+                if (hasStreams) {
+                    document.getElementById('dashboard').classList.remove('hidden');
+                    document.getElementById('streamsStatusText').innerText = "Streams Over Time Loaded";
+                    document.getElementById('streamsStatusIcon').innerText = "✅";
+                    document.getElementById('streamsStatusIcon').style.color = "#2dd4bf";
+
+                    const earliest = streamsData[0];
+                    const latest = streamsData[streamsData.length - 1];
+                    if (!document.getElementById('startDate').value) {
+                        document.getElementById('startDate').value = earliest.dateStr;
+                        document.getElementById('endDate').value = latest.dateStr;
+                    }
+                    updateAnalysis();
+                } else {
+                    document.getElementById('streamsStatusText').innerText = "No Streams Data";
+                    document.getElementById('streamsStatusIcon').innerText = "❌";
+                    document.getElementById('streamsStatusIcon').style.color = "#f43f5e";
+                }
+
+                if (hasGeo) {
+                    document.getElementById('geoStatusText').innerText = "Geography Loaded";
+                    document.getElementById('geoStatusIcon').innerText = "✅";
+                    document.getElementById('geoStatusIcon').style.color = "#2dd4bf";
+                    if (hasStreams) renderGeoAnalysis();
+                } else {
+                    document.getElementById('geoStatusText').innerText = "No Geography Data";
+                    document.getElementById('geoStatusIcon').innerText = "❌";
+                    document.getElementById('geoStatusIcon').style.color = "#f43f5e";
+                }
+            }
+        }
+
+        // --- Analysis Logic ---
+
+        function toggleAdvanced() {
+            document.getElementById('advancedPanel').classList.toggle('hidden');
+        }
+
+        function toggleKVariables() {
+            document.getElementById('kVariablesPanel').classList.toggle('hidden');
+        }
+
+        function calculateLogReturns(data) {
+            const returns = [];
+            for (let i = 1; i < data.length; i++) {
+                const prev = data[i - 1].streams;
+                const curr = data[i].streams;
+                // Handle zero/negative values safely
+                if (prev > 0 && curr > 0) {
+                    returns.push({
+                        date: data[i].date,
+                        dateStr: data[i].dateStr,
+                        value: Math.log(curr / prev)
+                    });
+                }
+            }
+            return returns;
+        }
+
+        function winsorize(returns, lowerPct, upperPct) {
+            if (returns.length < 10) return returns.map(r => ({ ...r, raw: r.value }));
+
+            const sorted = [...returns].sort((a, b) => a.value - b.value);
+            const lowerBound = sorted[Math.floor(returns.length * (lowerPct / 100))].value;
+            const upperBound = sorted[Math.floor(returns.length * (upperPct / 100))].value;
+
+            let affected = 0;
+            const finalized = returns.map(r => {
+                let val = r.value;
+                if (val < lowerBound) { val = lowerBound; affected++; }
+                if (val > upperBound) { val = upperBound; affected++; }
+                return { ...r, raw: r.value, value: val };
+            });
+
+            return { finalized, lowerBound, upperBound, affectedPct: (affected / returns.length) * 100 };
+        }
+
+        function getRollingStats(data, windowSize) {
+            const results = [];
+            for (let i = windowSize - 1; i < data.length; i++) {
+                const window = data.slice(i - windowSize + 1, i + 1).map(d => d.value);
+                const mu = window.reduce((a, b) => a + b, 0) / windowSize;
+                const sigma = Math.sqrt(window.reduce((a, b) => a + Math.pow(b - mu, 2), 0) / windowSize);
+                results.push({
+                    date: data[i].date,
+                    dateStr: data[i].dateStr,
+                    mu,
+                    sigma
+                });
+            }
+            return results;
+        }
+
+        function detectLongTail(rollingStats, threshold) {
+            // Find first date where |μ| < threshold
+            // This indicates the decay has dampened enough to be considered "quasi-stationary"
+            if (!rollingStats || rollingStats.length < 30) return null;
+
+            for (let i = 0; i < rollingStats.length; i++) {
+                const s = rollingStats[i];
+                if (Math.abs(s.mu) < threshold) {
+                    return s;
+                }
+            }
+            return null;
+        }
+        let distChart = null;
+
+        function updateAnalysis() {
+            const startStr = document.getElementById('startDate').value;
+            const endStr = document.getElementById('endDate').value;
+            if (!startStr || !endStr) return;
+
+            const startDate = new Date(startStr + 'T00:00:00');
+            const endDate = new Date(endStr + 'T00:00:00');
+
+            const windowData = streamsData.filter(d => d.date >= startDate && d.date <= endDate);
+            if (windowData.length < 2) return;
+
+            firstActive = streamsData.find(d => d.streams > 0);
+            peak = [...streamsData].filter(d => d.date <= endDate).sort((a, b) => b.streams - a.streams)[0];
+            renderMilestones(firstActive, peak, windowData[windowData.length - 1]);
+
+            const windowTotal = windowData.reduce((acc, curr) => acc + curr.streams, 0);
+            const windowDays = windowData.length || 1;
+            const dailyAvg = windowTotal / windowDays;
+            const allTimeTotal = streamsData.reduce((acc, curr) => acc + curr.streams, 0);
+
+            const trailing7 = getTrailingStats(endDate, 7);
+            const trailing30 = getTrailingStats(endDate, 30);
+            const trailing365 = getTrailingStats(endDate, 365);
+
+            // Sync Globals
+            windowDataTotalGlobal = windowTotal;
+            windowDailyAvgGlobal = dailyAvg;
+            windowDaysGlobal = windowDays;
+            trailing7Global = trailing7;
+            trailing30Global = trailing30;
+            trailing365Global = trailing365;
+            windowStartGlobal = startStr;
+            windowEndGlobal = endStr;
+            allTimeTotalGlobal = allTimeTotal;
+
+            renderScorecard({
+                windowTotal,
+                dailyAvg,
+                windowDays,
+                allTimeTotal,
+                trailing7,
+                trailing30,
+                trailing365,
+                startDate: startStr,
+                endDate: endStr,
+                projTotalUnits: allTimeTotal, // Placeholder until MC runs
+                projTotalRev: 0               // Placeholder until MC runs
+            });
+
+            // Seasonality Smoothing (Anti-Seasonality Layer)
+            const smoothing = document.getElementById('seasonalitySmoothing').value;
+            let processedData = windowData;
+
+            if (smoothing === '7d') {
+                processedData = windowData.map((d, i) => {
+                    if (i < 6) return d;
+                    const slice = windowData.slice(i - 6, i + 1);
+                    const avg = slice.reduce((a, b) => a + b.streams, 0) / 7;
+                    return { ...d, streams: avg };
+                });
+            }
+
+            // --- Statistical Engine ---
+            const logReturns = calculateLogReturns(processedData);
+
+            const winL = parseFloat(document.getElementById('winLower').value);
+            const winU = parseFloat(document.getElementById('winUpper').value);
+            const winResult = winsorize(logReturns, winL, winU);
+            const stats = winResult.finalized;
+
+            // Multi-horizon rolling stats
+            const rolling7 = getRollingStats(stats, 7);
+            const rolling30 = getRollingStats(stats, 30);
+            const rolling365 = getRollingStats(stats, Math.min(stats.length, 365));
+            const rolling3y = getRollingStats(stats, Math.min(stats.length, 1095));
+
+            // Regime Detection
+            const stabThreshold = parseFloat(document.getElementById('stabilityThreshold').value);
+            const longTailFirst = detectLongTail(rolling30, stabThreshold);
+
+            // Calculate robust regime stats (Average of entire tail)
+            let longTailRegime = null;
+            if (longTailFirst) {
+                const tailData = stats.filter(d => d.date >= longTailFirst.date);
+                if (tailData.length > 0) {
+                    const regimeMu = tailData.reduce((a, b) => a + b.value, 0) / tailData.length;
+                    const regimeSigma = Math.sqrt(tailData.reduce((a, b) => a + Math.pow(b.value - regimeMu, 2), 0) / tailData.length);
+                    longTailRegime = {
+                        dateStr: longTailFirst.dateStr,
+                        mu: regimeMu,
+                        sigma: regimeSigma
+                    };
+                }
+            }
+
+            renderStatisticalDiagnostics(stats, rolling7, rolling30, rolling365, rolling3y, longTailRegime, winResult, startStr, endStr);
+            renderSettlingChart(rolling30, stabThreshold);
+            renderChart(firstActive, peak, windowData, processedData);
+
+            // --- Forecasting Engine Execution ---
+            // If no long-tail detected, fallback to the analysis window stats for the forecast regime
+            let forecastRegime;
+            if (longTailRegime) {
+                forecastRegime = { ...longTailRegime, source: 'Steady-State (Long-Tail)' };
+            } else {
+                const fMu = stats.reduce((a, b) => a + b.value, 0) / stats.length;
+                const fSigma = Math.sqrt(stats.reduce((a, b) => a + Math.pow(b.value - fMu, 2), 0) / stats.length);
+                forecastRegime = { dateStr: endStr, mu: fMu, sigma: fSigma, source: 'Window Average (Fallback)' };
+            }
+
+            runMonteCarlo(forecastRegime, windowData[windowData.length - 1], streamsData[0].date, trailing30.avg);
+        }
+
+        function runMonteCarlo(regime, lastActual, analysisStartDate, trailing30Avg) {
+            const termYears = parseFloat(document.getElementById('forecastTerm').value);
+            const totalTermDays = Math.round(termYears * 365.25);
+            const lastObservedDate = lastActual.date;
+
+            const daysAlreadyObserved = Math.floor((lastObservedDate - analysisStartDate) / (1000 * 60 * 60 * 24)) + 1;
+            const daysRemaining = Math.max(0, totalTermDays - daysAlreadyObserved);
+
+            const diagEl = document.getElementById('simDiagnostics');
+            const alphaEl = document.getElementById('alphaBandDetails');
+
+            if (daysRemaining <= 0) {
+                diagEl.innerHTML = `Term (${termYears}Y) already fully observed within dataset.`;
+                return;
+            }
+
+            // --- Model Parameters ---
+            const dailyMu = regime.mu;           // Daily log-return drift (from regime detection)
+            const dailySigma = regime.sigma;      // Daily log-return volatility
+            const s0 = lastActual.streams;        // Last observed daily streams
+            const nSims = 1000;
+            const revFactor = parseFloat(document.getElementById('revFactor').value) || 0;
+            const regimeLabel = regime.source || 'Unknown';
+
+            // Mean-Reversion & Decay Parameters
+            const theta = parseFloat(document.getElementById('thetaMR').value) || 0.03;     // Mean-reversion speed
+            const kappaAnnual = parseFloat(document.getElementById('kappaDecay').value) || 5; // Annual decay %
+            const kappaDaily = (kappaAnnual / 100) / 365.25;                                 // Daily decay rate
+
+            // Equilibrium anchor: ln(trailing 30-day average)
+            const equilibriumLevel = trailing30Avg > 0 ? trailing30Avg : s0;
+            const lnEquilibrium = Math.log(equilibriumLevel);
+
+            // --- Display: Regime Parameters ---
+            alphaEl.innerHTML = `
+                <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:6px;">Model: Ornstein-Uhlenbeck (Mean-Reverting)</div>
+                <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:8px;">Regime: ${regimeLabel}</div>
+                <div style="display:flex; justify-content:space-between;"><span>Equilibrium Anchor (S̄)</span> <span style="font-weight:600;">${nf.format(Math.round(equilibriumLevel))}/day</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>θ (Mean-Rev Speed)</span> <span style="font-weight:600;">${theta.toFixed(3)}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>κ (Catalog Decay)</span> <span style="font-weight:600;">${kappaAnnual.toFixed(1)}%/yr</span></div>
+                <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:11px; margin-top:4px;"><span>Annualized σ</span> <span>${(dailySigma * Math.sqrt(365) * 100).toFixed(2)}%</span></div>
+                <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:11px;"><span>Annualized μ (regime)</span> <span>${(dailyMu * 365 * 100).toFixed(2)}%</span></div>
+                <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:11px;"><span>Half-life of deviation</span> <span>${Math.round(Math.log(2) / theta)} days</span></div>
+            `;
+
+            // --- Display: Simulation Summary ---
+            diagEl.innerHTML = `
+                <div style="display:flex; justify-content:space-between;"><span>Total Term</span> <span>${termYears}Y (${nf.format(totalTermDays)}d)</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>Days Observed</span> <span>${nf.format(daysAlreadyObserved)}</span></div>
+                <div style="display:flex; justify-content:space-between; color:var(--accent-primary);"><span>Days to Forecast</span> <span style="font-weight:700;">${nf.format(daysRemaining)}</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:4px;"><span>Monte Carlo Paths</span> <span>1,000</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:11px;"><span>Rev per Stream</span> <span>${revFactor > 0 ? '$' + revFactor.toFixed(4) : 'Not set'}</span></div>
+            `;
+
+            // --- K-Variables (Annualized Regime Parameters) ---
+            const kMu = dailyMu * 365;
+            const kSigma = dailySigma * Math.sqrt(365);
+            const kR = parseFloat(document.getElementById('kRiskFree').value) || 0;
+            const kRDecimal = kR / 100;
+
+            const kMuEl = document.getElementById('kMuValue');
+            const kSigmaEl = document.getElementById('kSigmaValue');
+            const kDerivedEl = document.getElementById('kDerivedMetrics');
+
+            const kMuColor = kMu < 0 ? '#f43f5e' : '#2dd4bf';
+            kMuEl.innerHTML = `<span style="color:${kMuColor}">${(kMu * 100).toFixed(2)}%</span>`;
+            kSigmaEl.innerHTML = `<span>${(kSigma * 100).toFixed(2)}%</span>`;
+
+            const excessReturn = kMu - kRDecimal;
+            const sharpeRatio = kSigma > 0 ? excessReturn / kSigma : 0;
+
+            kDerivedEl.innerHTML = `
+                <div style="display:flex; justify-content:space-between;"><span>K-Mu (Ann. Drift)</span> <span style="font-weight:600; color:${kMuColor}">${(kMu * 100).toFixed(2)}%</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>K-Sigma (Ann. Vol)</span> <span style="font-weight:600;">${(kSigma * 100).toFixed(2)}%</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>K-r (Risk-Free)</span> <span>${kR.toFixed(2)}%</span></div>
+                <div style="display:flex; justify-content:space-between; margin-top:8px; border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;"><span>Excess Return (K-Mu − K-r)</span> <span style="font-weight:600; color:${excessReturn < 0 ? '#f43f5e' : '#2dd4bf'}">${(excessReturn * 100).toFixed(2)}%</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>Sharpe-Like Ratio</span> <span style="font-weight:700; color:${sharpeRatio < 0 ? '#f43f5e' : sharpeRatio > 1 ? '#2dd4bf' : '#fff'}">${sharpeRatio.toFixed(3)}</span></div>
+            `;
+
+            // --- Monte Carlo Simulation (Ornstein-Uhlenbeck on Log-Streams) ---
+            // Process:  X(t+1) = X(t) + θ·(μ_eq(t) − X(t)) + σ·Z
+            // Where:    X = ln(streams), μ_eq(t) = ln(S̄) − κ·t (decaying equilibrium)
+            //           θ = mean-reversion speed, σ = daily volatility, Z ~ N(0,1)
+
+            const stride = daysRemaining > 5475 ? 30 : (daysRemaining > 1825 ? 7 : 1);
+            const results = new Array(daysRemaining).fill(0).map((_, t) => (t % stride === 0 || t === daysRemaining - 1) ? [] : null);
+            const cumulativeMeans = new Array(daysRemaining).fill(0);
+
+            // Box-Muller for Gaussian draws
+            function randomNormal() {
+                let u = 0, v = 0;
+                while (u === 0) u = Math.random();
+                while (v === 0) v = Math.random();
+                return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+            }
+
+            const lnS0 = Math.log(Math.max(s0, 1));  // Start in log-space
+
+            for (let i = 0; i < nSims; i++) {
+                let lnX = lnS0;  // Current log-stream level
+                for (let t = 0; t < daysRemaining; t++) {
+                    // Decaying equilibrium: the "anchor" slowly drifts down over time
+                    const muEq = lnEquilibrium - kappaDaily * t;
+
+                    // Ornstein-Uhlenbeck step: pull toward equilibrium + random shock
+                    const drift = theta * (muEq - lnX);
+                    const shock = dailySigma * randomNormal();
+                    lnX = lnX + drift + shock;
+
+                    // Convert back to stream-space (floor at 0)
+                    const sNext = Math.max(0, Math.exp(lnX));
+                    if (results[t]) results[t].push(sNext);
+                    cumulativeMeans[t] += (sNext / nSims);
+                }
+            }
+
+            const projectedRemainingUnits = cumulativeMeans.reduce((a, b) => a + b, 0);
+            const lifetimeTotalUnits = allTimeTotalGlobal + projectedRemainingUnits;
+            const lifetimeTotalRevenue = lifetimeTotalUnits * revFactor;
+
+            // Aggregation & Decimation (P5 / Mean / P95)
+            const forecastDecimated = [];
+            const forecastFull = [];
+
+            for (let t = 0; t < daysRemaining; t++) {
+                if (!results[t]) continue;
+
+                const dayResults = results[t].sort((a, b) => a - b);
+                const p5 = dayResults[Math.floor(nSims * 0.05)];
+                const mean = dayResults.reduce((a, b) => a + b, 0) / nSims;
+                const p95 = dayResults[Math.floor(nSims * 0.95)];
+
+                const forecastDate = new Date(lastActual.date);
+                forecastDate.setDate(forecastDate.getDate() + (t + 1));
+
+                const dataPoint = {
+                    date: forecastDate,
+                    dateStr: forecastDate.toISOString().split('T')[0],
+                    p5,
+                    mean,
+                    p95
+                };
+
+                forecastFull.push(dataPoint);
+                if (t % stride === 0 || t === daysRemaining - 1) {
+                    forecastDecimated.push(dataPoint);
+                }
+            }
+
+            lastForecast = forecastDecimated;
+            fullForecastData = forecastFull;
+            renderForecastChart(lastActual, forecastDecimated);
+
+            // Add a "Forecast Summary" to the simulation diagnostics
+            diagEl.innerHTML += `
+                <div style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+                    <div style="display:flex; justify-content:space-between; font-weight:700; color:#fff;"><span>Projected Total Units (LF)</span> <span>${nfc.format(lifetimeTotalUnits)}</span></div>
+                    <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--accent-success);"><span>Projected Lifetime Rev</span> <span>${money(lifetimeTotalRevenue)}</span></div>
+                </div>
+            `;
+
+            // Update scorecard with new projected metrics
+            const currentScorecardData = {
+                windowTotal: windowDataTotalGlobal,
+                dailyAvg: windowDailyAvgGlobal,
+                windowDays: windowDaysGlobal,
+                allTimeTotal: allTimeTotalGlobal,
+                trailing7: trailing7Global,
+                trailing30: trailing30Global,
+                trailing365: trailing365Global,
+                startDate: windowStartGlobal,
+                endDate: windowEndGlobal,
+                projTotalUnits: lifetimeTotalUnits,
+                projTotalRev: lifetimeTotalRevenue
+            };
+            renderScorecard(currentScorecardData);
+        }
+
+        let forecastChart = null;
+        function renderForecastChart(lastActual, forecast) {
+            const ctx = document.getElementById('forecastChart').getContext('2d');
+            if (forecastChart) forecastChart.destroy();
+
+            const labels = [lastActual.dateStr, ...forecast.map(f => f.dateStr)];
+
+            forecastChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'P95 (Upper Bull)',
+                            data: [lastActual.streams, ...forecast.map(f => f.p95)],
+                            borderColor: 'rgba(45, 212, 191, 0.6)',
+                            borderWidth: 1.5,
+                            fill: false,
+                            pointRadius: 0,
+                            tension: 0.2
+                        },
+                        {
+                            label: 'Forecast Mean (Expected)',
+                            data: [lastActual.streams, ...forecast.map(f => f.mean)],
+                            borderColor: '#38bdf8',
+                            borderWidth: 3,
+                            fill: false,
+                            pointRadius: 0,
+                            tension: 0.2
+                        },
+                        {
+                            label: 'P5 (Lower Bear)',
+                            data: [lastActual.streams, ...forecast.map(f => f.p5)],
+                            borderColor: 'rgba(244, 63, 94, 0.6)',
+                            borderWidth: 1.5,
+                            fill: false,
+                            pointRadius: 0,
+                            tension: 0.2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: { color: '#94a3b8', boxWidth: 12, font: { size: 10 } }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            padding: 12,
+                            cornerRadius: 12
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 9 }, maxTicksLimit: 12 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#64748b', font: { size: 9 }, callback: val => nfc.format(val) }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderStatisticalDiagnostics(returns, r7, r30, r365, r3y, longTail, winInfo, start, end) {
+            const statusEl = document.getElementById('regimeStatus');
+            const dateEl = document.getElementById('regimeDate');
+            const muEl = document.getElementById('steadyMu');
+            const sigmaEl = document.getElementById('steadySigma');
+            const horizonEl = document.getElementById('horizonSignals');
+
+            // Add Window Info
+            const windowInfoEl = document.getElementById('analysisWindowValue');
+            if (windowInfoEl) windowInfoEl.innerText = `${start} to ${end}`;
+
+            if (longTail) {
+                statusEl.innerText = "Stable Long-Tail Detected";
+                statusEl.style.color = "var(--accent-success)";
+                dateEl.innerText = `Long-tail start: ${longTail.dateStr}`;
+                muEl.innerText = (longTail.mu * 365 * 100).toFixed(2) + "%";
+                sigmaEl.innerText = (longTail.sigma * Math.sqrt(365) * 100).toFixed(2) + "%";
+            } else {
+                statusEl.innerText = "Regime: Launch/Decay";
+                statusEl.style.color = "var(--accent-warning)";
+                dateEl.innerText = "Stability not yet met in window";
+                muEl.innerText = "--";
+                sigmaEl.innerText = "--";
+            }
+
+            // Horizons
+            const getLatest = (arr) => {
+                if (!arr || arr.length === 0) return { mu: "--", sigma: "--", snr: "--" };
+                const s = arr[arr.length - 1];
+                return {
+                    mu: (s.mu * 365 * 100).toFixed(2) + "%",
+                    sigma: (s.sigma * Math.sqrt(365) * 100).toFixed(2) + "%",
+                    snr: s.sigma !== 0 ? ((s.mu / s.sigma) * Math.sqrt(365)).toFixed(2) : "0.00"
+                };
+            };
+
+            const h7 = getLatest(r7);
+            const h30 = getLatest(r30);
+            const h365 = getLatest(r365);
+            const h3y = getLatest(r3y);
+
+            horizonEl.innerHTML = [
+                { l: '7D', d: h7 }, { l: '30D', d: h30 }, { l: '365D', d: h365 }, { l: '3Y', d: h3y }
+            ].map(h => `
+                <div class="stat-card" style="padding: 10px 6px; text-align: center;">
+                    <div class="stat-label" style="font-size: 8px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px; text-transform: none;">${h.l} Signal</div>
+                    <div style="font-size: 12px; font-weight: 700; color: #fff;">Ann. μ: ${h.d.mu}</div>
+                    <div style="font-size: 10px; color: var(--text-muted);">Ann. σ: ${h.d.sigma}</div>
+                    <div style="font-size: 10px; color: var(--accent-primary); font-weight: 600; margin-top: 4px;">μ/σ: ${h.d.snr}</div>
+                </div>
+            `).join('');
+
+            renderDistChart(returns);
+        }
+
+        function renderDistChart(returns) {
+            const ctx = document.getElementById('distChart').getContext('2d');
+            if (distChart) distChart.destroy();
+
+            // Bucket log returns for histogram
+            const bins = 20;
+            const vals = returns.map(r => r.value);
+            const min = Math.min(...vals);
+            const max = Math.max(...vals);
+            const range = max - min;
+            const binSize = range / bins;
+
+            const histogram = new Array(bins).fill(0);
+            vals.forEach(v => {
+                let b = Math.floor((v - min) / binSize);
+                if (b >= bins) b = bins - 1;
+                histogram[b]++;
+            });
+
+            const labels = histogram.map((_, i) => (min + i * binSize).toFixed(2));
+
+            distChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: histogram,
+                        backgroundColor: 'rgba(56, 189, 248, 0.5)',
+                        borderColor: '#38bdf8',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    }
+                }
+            });
+        }
+
+
+        let settlingChart = null;
+        function renderSettlingChart(rolling30, threshold) {
+            const ctx = document.getElementById('settlingChart').getContext('2d');
+            if (settlingChart) settlingChart.destroy();
+
+            settlingChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: rolling30.map(d => d.dateStr),
+                    datasets: [{
+                        label: 'Rolling 30D Ann. μ',
+                        data: rolling30.map(d => d.mu * 365),
+                        borderColor: '#818cf8',
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        tension: 0.3
+                    }, {
+                        label: 'Zero Line',
+                        data: rolling30.map(() => 0),
+                        borderColor: 'rgba(255,255,255,0.2)',
+                        borderDash: [5, 5],
+                        borderWidth: 1,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#94a3b8', font: { size: 8 } }
+                        }
+                    }
+                }
+            });
+        }
+        function getTrailingStats(target, days) {
+            const start = new Date(target);
+            start.setDate(start.getDate() - (days - 1));
+            const dataInRange = streamsData.filter(d => d.date >= start && d.date <= target);
+            const total = dataInRange.reduce((a, c) => a + c.streams, 0);
+            return {
+                total,
+                avg: total / days,
+                count: dataInRange.length,
+                startDate: dataInRange.length > 0 ? dataInRange[0].dateStr : null,
+                endDate: dataInRange.length > 0 ? dataInRange[dataInRange.length - 1].dateStr : null
+            };
+        }
+
+        // --- Rendering ---
+
+        function renderScorecard(m) {
+            const revFactor = parseFloat(document.getElementById('revFactor').value) || 0;
+            const allTimeRev = m.allTimeTotal * revFactor;
+            // Use projected revenue if available, otherwise fallback to all-time revenue
+            const projRev = m.projTotalRev !== undefined ? m.projTotalRev : allTimeRev;
+            const projUnits = m.projTotalUnits !== undefined ? m.projTotalUnits : m.allTimeTotal;
+
+            const container = document.getElementById('scorecard');
+            container.innerHTML = `
+                <div class="stat-card" style="border-left: 3px solid var(--accent-primary);">
+                    <div class="stat-label">Projected Lifetime Total</div>
+                    <div class="stat-value" style="color: #fff; font-size: 22px;">${nfc.format(projUnits)}</div>
+                    <div class="stat-diff" style="color: var(--accent-success); font-weight: 700;">${money(projRev)} Est. Rev</div>
+                </div>
+                <div class="stat-card" style="background: rgba(56, 189, 248, 0.05);">
+                    <div class="stat-label">All-Time Cumulative</div>
+                    <div class="stat-value">${nfc.format(m.allTimeTotal)}</div>
+                    <div class="stat-diff" style="opacity: 0.6">Reported To Date</div>
+                    <div class="stat-diff" style="opacity: 0.8; margin-top: 2px;">${money(allTimeRev)} Est. Rev</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Analysis Window</div>
+                    <div class="stat-value">${nfc.format(m.windowTotal)}</div>
+                    <div class="stat-diff" style="opacity: 0.6">${nf.format(Math.round(m.dailyAvg))}/day avg</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Trailing 7D</div>
+                    <div class="stat-value">${nfc.format(m.trailing7.total)}</div>
+                    <div class="stat-diff" style="opacity: 0.6">${nf.format(Math.round(m.trailing7.avg))}/day</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Trailing 30D</div>
+                    <div class="stat-value">${nfc.format(m.trailing30.total)}</div>
+                    <div class="stat-diff" style="opacity: 0.6">${nf.format(Math.round(m.trailing30.avg))}/day</div>
+                </div>
+                <div class="stat-card" style="opacity: 0.8">
+                    <div class="stat-label">Trailing 365D</div>
+                    <div class="stat-value">${nfc.format(m.trailing365.total)}</div>
+                    <div class="stat-diff" style="opacity: 0.6">${nf.format(Math.round(m.trailing365.avg))}/day</div>
+                </div>
+            `;
+        }
+
+        function renderMilestones(start, peak, target) {
+            const container = document.getElementById('milestones');
+
+            container.innerHTML = `
+                <div style="margin-bottom: 16px;">
+                    <div class="stat-label">Days on Market</div>
+                    <div style="font-size: 24px; font-weight: 800; color: var(--accent-primary)">${target ? target.daysOnMarket : '0'}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Since First Stream</div>
+                </div>
+                <div style="margin-bottom: 16px; padding-top: 16px; border-top: 1px solid var(--card-border)">
+                    <div class="stat-label">First Active Date</div>
+                    <div style="font-size: 14px; font-weight: 600;">${start ? df.format(start.date) : 'N/A'}</div>
+                </div>
+                <div>
+                    <div class="stat-label">Peak Stream Date</div>
+                    <div style="font-size: 14px; font-weight: 600;">${peak ? df.format(peak.date) : 'N/A'}</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">${peak ? nf.format(peak.streams) + ' peak daily' : ''}</div>
+                </div>
+            `;
+        }
+
+        function renderGeoAnalysis() {
+            if (geoData.length === 0) return;
+            const container = document.getElementById('geoAnalysis');
+
+            const total = geoData.reduce((a, c) => a + c.streams, 0);
+            const tbody = document.getElementById('geoTableBody');
+
+            tbody.innerHTML = geoData.slice(0, 50).map(row => {
+                const countryName = row.country.toLowerCase() === 'others' ? 'Unknown' : row.country;
+                const iso = getIso(row.country);
+                const pct = (row.streams / total) * 100;
+                return `
+                    <tr>
+                        <td><span class="rank-badge">${row.rank}</span></td>
+                        <td>
+                            <div class="country-cell">
+                                ${iso ? `<span class="fi fi-${iso}"></span>` : ''}
+                                <span>${countryName}</span>
+                            </div>
+                        </td>
+                        <td style="text-align:right; font-weight:600;">${nf.format(row.streams)}</td>
+                        <td style="text-align:right; color:var(--text-muted); font-size:11px;">${pct.toFixed(1)}%</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const top1 = geoData[0].streams;
+            const top1Pct = (top1 / total) * 100;
+            const rowPct = 100 - top1Pct;
+
+            document.getElementById('geoBarTop').style.width = top1Pct + '%';
+            document.getElementById('geoBarRow').style.width = rowPct + '%';
+            document.getElementById('geoTopLabel').innerText = `${geoData[0].country}: ${top1Pct.toFixed(1)}%`;
+            document.getElementById('geoRowLabel').innerText = `ROW: ${rowPct.toFixed(1)}%`;
+
+            // Pie Chart for ROW breakdown
+            const rowData = geoData.slice(1, 7).map(d => ({
+                ...d,
+                country: d.country.toLowerCase() === 'others' ? 'Unknown' : d.country
+            }));
+            const othersSum = geoData.slice(7).reduce((a, c) => a + c.streams, 0);
+
+            const labels = rowData.map(d => d.country);
+            const data = rowData.map(d => d.streams);
+            if (othersSum > 0) {
+                labels.push('Rest of World');
+                data.push(othersSum);
+            }
+
+            const ctx = document.getElementById('rowPieChart').getContext('2d');
+            if (pieChart) pieChart.destroy();
+            pieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#38bdf8', // Sky
+                            '#818cf8', // Indigo
+                            '#c084fc', // Purple
+                            '#f472b6', // Pink
+                            '#2dd4bf', // Teal
+                            '#fbbf24', // Amber
+                            '#475569'  // Slate for Rest of World
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#94a3b8',
+                                font: { size: 10 },
+                                padding: 10
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderChart(firstActive, peak, windowData, smoothedData = null) {
+            const ctx = document.getElementById('streamsChart').getContext('2d');
+            if (chart) chart.destroy();
+
+            const datasets = [{
+                label: 'Daily Streams',
+                data: windowData.map(d => ({ x: d.dateStr, y: d.streams })),
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                borderWidth: 2
+            }];
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            padding: 12,
+                            cornerRadius: 12,
+                            titleFont: { size: 12 },
+                            bodyFont: { size: 13 }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: {
+                                color: '#64748b',
+                                font: { size: 10 },
+                                callback: val => nfc.format(val)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Utils ---
+
+        function parseCSV(text) {
+            const rows = [];
+            let row = [];
+            let cur = "";
+            let inQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i];
+                const next = text[i + 1];
+
+                if (ch === '"' && inQuotes && next === '"') { cur += '"'; i++; continue; }
+                if (ch === '"') { inQuotes = !inQuotes; continue; }
+                if (ch === ',' && !inQuotes) { row.push(cur); cur = ""; continue; }
+                if ((ch === '\n' || ch === '\r') && !inQuotes) {
+                    if (cur.length || row.length) {
+                        row.push(cur); cur = "";
+                        if (ch === '\r' && next === '\n') i++;
+                        rows.push(row);
+                        row = [];
+                    }
+                    continue;
+                }
+                cur += ch;
+            }
+            if (cur.length || row.length) { row.push(cur); rows.push(row); }
+            return rows;
+        }
+
+        async function exportAnalysis() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 20;
+            let yPos;
+
+            // Brand setup
+            const artist = albumMeta.artist || "Unknown Artist";
+            const album = albumMeta.album || "Unknown Album";
+            const projectTitle = `${artist}: ${album}`;
+            const reportDate = new Date().toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+            const sWindow = document.getElementById('startDate').value;
+            const eWindow = document.getElementById('endDate').value;
+
+            // --- PDF GENERATION ---
+
+            // Cover Page
+            const logoImg = new Image();
+            logoImg.crossOrigin = 'anonymous';
+            logoImg.src = 'https://upload.wikimedia.org/wikipedia/en/9/9d/Mexican_Summer_logo.png';
+
+            await new Promise((resolve) => {
+                logoImg.onload = resolve;
+                logoImg.onerror = resolve;
+            });
+
+            if (logoImg.complete && logoImg.naturalHeight !== 0) {
+                const logoAspect = logoImg.naturalWidth / logoImg.naturalHeight;
+                const logoW = 40;
+                const logoH = logoW / logoAspect;
+                pdf.addImage(logoImg, 'PNG', (pageWidth - logoW) / 2, 60, logoW, logoH);
+            }
+
+            pdf.setFontSize(22);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Trailing Streaming Analysis & Future Forecasting', pageWidth / 2, 120, { align: 'center' });
+
+            pdf.setFontSize(11);
+            pdf.setTextColor(100);
+            pdf.text(projectTitle, pageWidth / 2, 140, { align: 'center' });
+            pdf.text(`Report Generated: ${reportDate}`, pageWidth / 2, 148, { align: 'center' });
+
+            // Page 2: Executive Summary
+            pdf.addPage();
+            pdf.setFontSize(18);
+            pdf.setTextColor(0);
+            pdf.text('Executive Summary', margin, 35);
+
+            if (logoImg.complete && logoImg.naturalHeight !== 0) {
+                const logoSmallW = 20;
+                const logoSmallH = logoSmallW / (logoImg.naturalWidth / logoImg.naturalHeight);
+                pdf.addImage(logoImg, 'PNG', pageWidth - margin - logoSmallW, 12, logoSmallW, logoSmallH);
+            }
+
+            pdf.setFontSize(9);
+            pdf.setTextColor(100);
+            pdf.text(`Project: ${projectTitle}`, margin, 42);
+            pdf.text(`Analysis Date: ${reportDate}`, margin, 48);
+
+            pdf.setFontSize(13);
+            pdf.setTextColor(0);
+            pdf.text('Performance Summary', margin, 65);
+
+            // Metrics logic
+            const allTimeTotal = streamsData.reduce((a, b) => a + b.streams, 0);
+            const windowTotal = streamsData.filter(d => d.date >= new Date(sWindow + 'T00:00:00') && d.date <= new Date(eWindow + 'T00:00:00')).reduce((a, b) => a + b.streams, 0);
+
+            const peakDate = peak?.date;
+            let sBefore = 0, s1m = 0, s3m = 0, s6m = 0, s12m = 0;
+            if (peakDate && streamsData) {
+                sBefore = streamsData.filter(d => d.date <= peakDate).reduce((a, b) => a + b.streams, 0);
+                const d1m = new Date(peakDate); d1m.setMonth(d1m.getMonth() + 1);
+                s1m = streamsData.filter(d => d.date <= d1m).reduce((a, b) => a + b.streams, 0);
+                const d3m = new Date(peakDate); d3m.setMonth(d3m.getMonth() + 3);
+                s3m = streamsData.filter(d => d.date <= d3m).reduce((a, b) => a + b.streams, 0);
+                const d6m = new Date(peakDate); d6m.setMonth(d6m.getMonth() + 6);
+                s6m = streamsData.filter(d => d.date <= d6m).reduce((a, b) => a + b.streams, 0);
+                const d12m = new Date(peakDate); d12m.setMonth(d12m.getMonth() + 12);
+                s12m = streamsData.filter(d => d.date <= d12m).reduce((a, b) => a + b.streams, 0);
+            }
+
+            const revFactor = parseFloat(document.getElementById('revFactor').value) || 0;
+            const projLifetimeUnits = document.querySelector('#scorecard .stat-card .stat-value')?.innerText || nfc.format(allTimeTotal);
+
+            const metrics = [
+                ['Metric', 'Value'],
+                ['Cumulative Project Streams (All-Time)', nfc.format(allTimeTotal)],
+                ['Projected Lifetime Streams', projLifetimeUnits],
+                ['Rev per Stream', revFactor > 0 ? '$' + revFactor.toFixed(4) : 'Not set'],
+                ['Active Analysis Window Streams', nfc.format(windowTotal)],
+                ['Peak Daily Streams', peak?.streams ? nfc.format(peak.streams) : '--'],
+                ['First Stream Date', firstActive?.dateStr || '--'],
+                ['Peak Stream Date', peak?.dateStr || '--'],
+                ['Streams Before Peak', nfc.format(sBefore)],
+                ['Streams to Date (1M Post-Peak)', nfc.format(s1m)],
+                ['Streams to Date (3M Post-Peak)', nfc.format(s3m)],
+                ['Streams to Date (6M Post-Peak)', nfc.format(s6m)],
+                ['Streams to Date (12M Post-Peak)', nfc.format(s12m)]
+            ];
+
+            yPos = 75;
+            pdf.setFillColor(44, 62, 80);
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, 8, 'F');
+            pdf.setTextColor(255);
+            pdf.setFontSize(9);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(metrics[0][0], margin + 5, yPos + 6);
+            pdf.text(metrics[0][1], pageWidth - margin - 5, yPos + 6, { align: 'right' });
+
+            yPos += 8;
+            pdf.setTextColor(0); pdf.setFont('helvetica', 'normal');
+            for (let i = 1; i < metrics.length; i++) {
+                pdf.setFillColor(i % 2 === 0 ? 245 : 255);
+                pdf.rect(margin, yPos, pageWidth - 2 * margin, 8, 'F');
+                pdf.text(metrics[i][0], margin + 5, yPos + 6);
+                pdf.text(metrics[i][1], pageWidth - margin - 5, yPos + 6, { align: 'right' });
+                yPos += 8;
+            }
+
+            const sCanvas = document.getElementById('streamsChart');
+            if (sCanvas) {
+                const chartImg = sCanvas.toDataURL('image/png');
+                const aspect = sCanvas.clientWidth / sCanvas.clientHeight;
+                const cW = pageWidth - 2 * margin;
+                const cH = cW / aspect;
+                yPos += 15;
+                pdf.setFontSize(13);
+                pdf.text('Historical Performance Timeline', margin, yPos);
+                yPos += 8;
+                pdf.addImage(chartImg, 'PNG', margin, yPos, cW, cH);
+            }
+
+            pdf.addPage();
+            pdf.setFontSize(18);
+            pdf.text('Long-Term Forecast', margin, 35);
+            if (logoImg.complete && logoImg.naturalHeight !== 0) {
+                const logoSmallW = 20;
+                const logoSmallH = logoSmallW / (logoImg.naturalWidth / logoImg.naturalHeight);
+                pdf.addImage(logoImg, 'PNG', pageWidth - margin - logoSmallW, 12, logoSmallW, logoSmallH);
+            }
+
+            const fCanvas = document.getElementById('forecastChart');
+            if (fCanvas) {
+                const chartImg = fCanvas.toDataURL('image/png');
+                const aspect = fCanvas.clientWidth / fCanvas.clientHeight;
+                const cW = pageWidth - 2 * margin;
+                const cH = cW / aspect;
+                pdf.addImage(chartImg, 'PNG', margin, 45, cW, cH);
+                yPos = 45 + cH + 20;
+            } else { yPos = 55; }
+
+            pdf.setFontSize(13);
+            pdf.text('Statistical Engine & Regime Detection', margin, yPos);
+            yPos += 10;
+
+            const steadyMu = document.getElementById('steadyMu')?.innerText || '--';
+            const steadySigma = document.getElementById('steadySigma')?.innerText || '--';
+            const regimeStatus = document.getElementById('regimeStatus')?.innerText || '--';
+            const regimeDateText = document.getElementById('regimeDate')?.innerText || '--';
+
+            const statsMetrics = [
+                ['Metric', 'Value'],
+                ['Target Analysis Window', `${sWindow} to ${eWindow}`],
+                ['Regime Status', regimeStatus],
+                ['Stability Detection Date', regimeDateText.replace('Long-tail start date: ', '')],
+                ['Steady State Mu (Ann. Returns)', steadyMu],
+                ['Steady State Sigma (Ann. Vol)', steadySigma],
+                ['Winsorization Bounds', `${document.getElementById('winLower')?.value || '2.5'}% - ${document.getElementById('winUpper')?.value || '97.5'}%`],
+                ['Stability Threshold', document.getElementById('stabilityThreshold')?.value || '0.0005']
+            ];
+
+            pdf.setFillColor(44, 62, 80);
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, 8, 'F');
+            pdf.setTextColor(255); pdf.setFontSize(9); pdf.setFont('helvetica', 'bold');
+            pdf.text(statsMetrics[0][0], margin + 5, yPos + 6);
+            pdf.text(statsMetrics[0][1], pageWidth - margin - 5, yPos + 6, { align: 'right' });
+
+            yPos += 8;
+            pdf.setTextColor(0); pdf.setFont('helvetica', 'normal');
+            for (let i = 1; i < statsMetrics.length; i++) {
+                pdf.setFillColor(i % 2 === 0 ? 245 : 255);
+                pdf.rect(margin, yPos, pageWidth - 2 * margin, 8, 'F');
+                pdf.text(statsMetrics[i][0], margin + 5, yPos + 6);
+                pdf.text(statsMetrics[i][1], pageWidth - margin - 5, yPos + 6, { align: 'right' });
+                yPos += 8;
+            }
+
+            // Page 4: Geographic Reach
+            pdf.addPage();
+            pdf.setFontSize(18);
+            pdf.text('Global Geographic Reach', margin, 35);
+            if (logoImg.complete && logoImg.naturalHeight !== 0) {
+                const logoSmallW = 20;
+                const logoSmallH = logoSmallW / (logoImg.naturalWidth / logoImg.naturalHeight);
+                pdf.addImage(logoImg, 'PNG', pageWidth - margin - logoSmallW, 12, logoSmallW, logoSmallH);
+            }
+
+            yPos = 55;
+
+            pdf.setFontSize(13);
+            pdf.text('Top Markets Breakdown', margin, yPos);
+            yPos += 10;
+            const geoRows = Array.from(document.querySelectorAll('#geoTableBody tr')).slice(0, 15);
+            if (geoRows.length > 0) {
+                pdf.setFillColor(45, 212, 191);
+                pdf.rect(margin, yPos, pageWidth - 2 * margin, 8, 'F');
+                pdf.setTextColor(0); pdf.setFontSize(8); pdf.setFont('helvetica', 'bold');
+                pdf.text('Rank', margin + 5, yPos + 6); pdf.text('Country', margin + 20, yPos + 6);
+                pdf.text('Streams', pageWidth - margin - 40, yPos + 6, { align: 'right' });
+                pdf.text('% Share', pageWidth - margin - 5, yPos + 6, { align: 'right' });
+                yPos += 8;
+                pdf.setFont('helvetica', 'normal');
+                geoRows.forEach((row, i) => {
+                    pdf.setFillColor(i % 2 === 0 ? 245 : 255);
+                    pdf.rect(margin, yPos, pageWidth - 2 * margin, 7, 'F');
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 4) {
+                        pdf.text(cells[0].innerText, margin + 5, yPos + 5);
+                        pdf.text(cells[1].innerText.substring(0, 25), margin + 20, yPos + 5);
+                        pdf.text(cells[2].innerText, pageWidth - margin - 40, yPos + 5, { align: 'right' });
+                        pdf.text(cells[3].innerText, pageWidth - margin - 5, yPos + 5, { align: 'right' });
+                        yPos += 7;
+                    }
+                });
+            }
+
+            const pdfName = `${projectTitle.replace(/[^a-z0-9]/gi, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+            pdf.save(pdfName);
+
+            // --- EXCEL GENERATION ---
+            const wb = XLSX.utils.book_new();
+
+            // Recalculate full history stats for export
+            const fullReturns = calculateLogReturns(streamsData);
+            const winL = parseFloat(document.getElementById('winLower').value);
+            const winU = parseFloat(document.getElementById('winUpper').value);
+            const fullWin = winsorize(fullReturns, winL, winU).finalized;
+
+            const sheet1Data = streamsData.map((d, i) => {
+                const ret = i > 0 ? fullReturns[i - 1] : null;
+                const wRet = i > 0 ? fullWin[i - 1] : null;
+                return {
+                    "Date": d.dateStr,
+                    "Streams": d.streams,
+                    "Log Returns": ret ? ret.value : "",
+                    "Winsorized Log Returns": wRet ? wRet.value : ""
+                };
+            });
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheet1Data), "Full History");
+
+            // Sheet 2: Analysis Window
+            const sStr = document.getElementById('startDate').value;
+            const eStr = document.getElementById('endDate').value;
+            if (sStr && eStr) {
+                const sDate = new Date(sStr + 'T00:00:00');
+                const eDate = new Date(eStr + 'T00:00:00');
+                const winData = streamsData.filter(d => d.date >= sDate && d.date <= eDate);
+                const winReturns = calculateLogReturns(winData);
+                const winWin = winsorize(winReturns, winL, winU).finalized;
+
+                const sheet2Data = winData.map((d, i) => {
+                    const ret = i > 0 ? winReturns[i - 1] : null;
+                    const wRet = i > 0 ? winWin[i - 1] : null;
+                    return {
+                        "Date": d.dateStr,
+                        "Streams": d.streams,
+                        "Log Returns": ret ? ret.value : "",
+                        "Winsorized Log Returns": wRet ? wRet.value : ""
+                    };
+                });
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheet2Data), "Analysis Window");
+            }
+
+            // Sheet 3: Forecast (FULL RESOLUTION DAILY)
+            if (fullForecastData && fullForecastData.length > 0) {
+                const sheet3Data = fullForecastData.map(f => ({
+                    "Date": f.dateStr,
+                    "P5 (Bear)": f.p5,
+                    "Mean (Expected)": f.mean,
+                    "P95 (Bull)": f.p95
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheet3Data), "Forecast Projections");
+            }
+
+            const xlsxName = `${projectTitle.replace(/[^a-z0-9]/gi, '_')}_Data_Bundle_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, xlsxName);
+        }
+    </script>
+</body>
+
+</html>
