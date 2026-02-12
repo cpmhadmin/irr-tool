@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Forecaster</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-plugin-dragdata@2.2.3/dist/chartjs-plugin-dragdata.min.js"></script>
+</head>
+
+<body>
+    <div class="title-container">
+        <div class="cpmh-tty">
+            <span id="appTitleText"></span><span class="cpmh-cursor"></span>
+        </div>
+    </div>
+    <div class="container">
+        <div class="chart-container">
+            <canvas id="forecastChart"></canvas>
+            <canvas id="overlayCanvas"></canvas>
+        </div>
+        <div class="footer-controls">
+            <div class="instructions">
+                <strong>Draw directly on the chart</strong> to create your forecast curve. You can also <strong>drag
+                    points</strong> to adjust manually or <strong>Double-Click</strong> two points to interpolate.
+                Use <strong>⌘Z</strong> to undo or <strong>⇧⌘Z</strong> to redo.
+            </div>
+
+            <div class="project-controls">
+                <div class="input-group">
+                    <label for="projectName">Project Name:</label>
+                    <input type="text" id="projectName" placeholder="Enter Project Name">
+                </div>
+                <div class="input-group">
+                    <label for="announceDate">Announce Date:</label>
+                    <input type="date" id="announceDate">
+                </div>
+                <div class="input-group">
+                    <label for="streetDate">Street Date:</label>
+                    <input type="date" id="streetDate">
+                </div>
+                <div id="dateError" class="error-message" style="display: none;">Announce Date cannot be after Street
+                    Date</div>
+            </div>
+
+            <div class="input-group" style="margin-top: 15px;">
+                <label for="yAxisMax">Max Daily Streams:</label>
+                <input type="number" id="yAxisMax" value="250000" step="10000">
+            </div>
+
+
+
+
+        </div>
+
+        <div class="analysis-container">
+            <div class="dsp-section">
+                <h3>DSP Assumptions</h3>
+                <div class="table-wrapper dsp-table-wrapper">
+                    <table id="dspTable">
+                        <thead>
+                            <tr>
+                                <th>DSP</th>
+                                <th>Share (%)</th>
+                                <th>Value Per Stream ($)</th>
+                                <th>Streams</th>
+                                <th>Revenue ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated by JS -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td colspan="3">Total</td>
+                                <td id="totalStreams">0</td>
+                                <td id="totalRevenue">$0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div class="charts-section">
+                <h3>Distribution Analysis</h3>
+                <div class="charts-wrapper">
+                    <div class="chart-box">
+                        <canvas id="streamsPieChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="revenuePieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulation Settings -->
+        <div class="simulation-controls">
+            <div class="control-header">
+                <h3>Simulation Settings</h3>
+            </div>
+            <div class="control-grid">
+                <div class="input-group confidence-slider-group"
+                    style="width: 100%; max-width: 100%; flex-direction: column; align-items: flex-start;">
+                    <div style="display: flex; justify-content: space-between; width: 100%; margin-bottom: 8px;">
+                        <label for="confidenceSlider" style="color: var(--accent-teal); font-weight: 600;">Confidence
+                            Level</label>
+                        <span id="confidenceValue"
+                            style="color: var(--text-primary); font-family: monospace; font-size: 1.1em;">80%</span>
+                    </div>
+                    <input type="range" id="confidenceSlider" min="0" max="100" value="80" step="1"
+                        style="width: 100%;">
+                    <div
+                        style="display: flex; justify-content: space-between; width: 100%; font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">
+                        <span>Uncertain (High Volatility)</span>
+                        <span>Certain (Low Volatility)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confidence Analysis Section -->
+        <div class="confidence-section card">
+            <div class="card-header">
+                <h3>Forecast Confidence Analysis</h3>
+            </div>
+            <div class="chart-container" style="height: 350px;">
+                <canvas id="confidenceChart"></canvas>
+            </div>
+        </div>
+
+        <div class="tables-container">
+            <div class="table-wrapper">
+                <h3>Weekly Forecast</h3>
+                <div class="table-scroll-container">
+                    <table id="weeklyTable">
+                        <thead>
+                            <tr>
+                                <th>Week</th>
+                                <th>P5 Amount</th>
+                                <th>P5 Cumulative Total</th>
+                                <th>Forecast Amount</th>
+                                <th>Forecast Cumulative Total</th>
+                                <th>P95 Amount</th>
+                                <th>P95 Cumulative Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
