@@ -1,0 +1,2719 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IRR Calculator</title>
+    <!-- External Libraries for Exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+    <div id="irr-app" class="irr-app">
+        <div class="irr-container">
+            <header class="irr-header">
+                <div>
+                    <div class="cpmh-tty">
+                        <span id="appTitleText"></span><span class="cpmh-cursor"></span>
+                    </div>
+                    <p class="irr-subtitle">
+                        Model recoup and cash flow scenarios, export reports.
+                    </p>
+                </div>
+                <div class="irr-header-actions" style="display: flex; gap: 12px; align-items: center;">
+                    <button id="clear-inputs-btn" class="irr-button"
+                        style="background: rgba(248, 113, 113, 0.15); color: #fca5a5; border: 1px solid rgba(248, 113, 113, 0.3); padding: 4px 12px; font-size: 11px;">Clear</button>
+                    <div class="irr-badge">Beta</div>
+                </div>
+            </header>
+
+
+            <!-- Primary Inputs -->
+            <section class="irr-card irr-inputs-card">
+                <h2 class="irr-card-title">Deal Setup</h2>
+                <p class="irr-card-subtitle">
+                    Overwrite the default values to model your forecasts.
+                </p>
+
+                <div class="irr-input-section-header">
+                    <div class="irr-input-group">
+                        <label for="project-name" class="irr-label">Project Name</label>
+                        <div class="irr-input-prefix">
+                            <input type="text" id="project-name" class="irr-input" placeholder="Enter project name..."
+                                style="padding-left: 10px;" />
+                        </div>
+                    </div>
+                    <div class="irr-input-group">
+                        <label for="street-date" class="irr-label">Street Date</label>
+                        <div class="irr-input-prefix">
+                            <input type="date" id="street-date" class="irr-input" style="padding-left: 10px;" />
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="irr-input-grid">
+                    <div class="irr-input-group">
+                        <label for="year1-cf" class="irr-label">Year 1 Forecasted Streams</label>
+                        <div class="irr-input-prefix">
+                            <input type="text" id="year1-cf" class="irr-input irr-input-money" placeholder="5,000,000"
+                                value="5000000" />
+                        </div>
+                        <p class="irr-help">
+                            Total streams in Year 1 (multiplied by Rev Factor to get revenue).
+                        </p>
+                    </div>
+
+
+                    <div class="irr-input-group">
+                        <label for="budget-100" class="irr-label">100% Recoup Budget (Advances)</label>
+                        <div class="irr-input-prefix">
+                            <span>$</span>
+                            <input type="text" id="budget-100" class="irr-input irr-input-money" placeholder="25,000"
+                                value="25000" />
+                        </div>
+                        <p class="irr-help">
+                            Fully recoupable spend (advances, recording).
+                        </p>
+                    </div>
+
+
+                    <div class="irr-input-group">
+                        <label for="budget-50" class="irr-label">50% Recoup Budget (Promo)</label>
+                        <div class="irr-input-prefix">
+                            <span>$</span>
+                            <input type="text" id="budget-50" class="irr-input irr-input-money" placeholder="25,000"
+                                value="25000" />
+                            <button id="promo-builder-trigger" class="irr-input-btn" title="Build Promo Budget">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                                </svg>
+                                <span>Build</span>
+                            </button>
+                        </div>
+                        <p class="irr-help">
+                            Project COGS.
+                        </p>
+                    </div>
+                    <div class="irr-input-group" style="display: none;">
+                        <label for="phys-mfg-cost" class="irr-label">Physical Mfg Cost</label>
+                        <div class="irr-input-prefix">
+                            <span>$</span>
+                            <input type="text" id="phys-mfg-cost" class="irr-input irr-input-money" placeholder="0"
+                                value="0" />
+                        </div>
+                        <p class="irr-help">Total cost to manufacture physical goods.</p>
+                    </div>
+
+                    <div class="irr-input-group" style="display: none;">
+                        <label for="phys-multiple" class="irr-label">Physical Revenue Multiple</label>
+                        <div class="irr-input-prefix">
+                            <input type="number" id="phys-multiple" class="irr-input" placeholder="0" value="0"
+                                step="0.1" style="padding-left: 10px;" />
+                        </div>
+                        <p class="irr-help">Expected ROI multiple on mfg cost.</p>
+                    </div>
+                </div>
+
+
+                <!-- Advanced Assumptions -->
+                <details class="irr-advanced">
+                    <summary>Advanced assumptions</summary>
+                    <div class="irr-advanced-grid">
+                        <div class="irr-input-group">
+                            <label for="discount-rate" class="irr-label">Discount Rate (annual, %)</label>
+                            <input type="number" id="discount-rate" class="irr-input" value="10" step="0.1" />
+                            <p class="irr-help">For implied NPV later, if you want it.</p>
+                        </div>
+
+
+                        <div class="irr-input-group">
+                            <label for="artist-split" class="irr-label">Artist Royalty Split (%)</label>
+                            <input type="number" id="artist-split" class="irr-input" value="50" step="1" />
+                            <p class="irr-help">
+                                Share of net revenues paid to the artist after recoup.
+                            </p>
+                        </div>
+
+
+                        <div class="irr-input-group">
+                            <label for="distro-fee" class="irr-label">Distributor Fee (%)</label>
+                            <input type="number" id="distro-fee" class="irr-input" value="10" step="0.5" />
+                            <p class="irr-help">
+                                Only needed if we later back into net from gross streaming.
+                            </p>
+                        </div>
+
+
+                        <div class="irr-input-group">
+                            <label for="years-to-map" class="irr-label">Years to Map</label>
+                            <input type="number" id="years-to-map" class="irr-input" value="10" min="1" max="30" />
+                            <p class="irr-help">
+                                Number of forecast years (e.g., 10).
+                            </p>
+                        </div>
+
+
+                        <div class="irr-input-group">
+                            <label for="rev-factor" class="irr-label">Revenue per Stream (Rev Factor)</label>
+                            <input type="number" id="rev-factor" class="irr-input" value="0.0035" step="0.0001" />
+                            <p class="irr-help">
+                                Used to convert revenues into streaming forecasts.
+                            </p>
+                        </div>
+
+
+                        <div class="irr-input-group">
+                            <label for="mu" class="irr-label">Mu (annual growth/decay, %)</label>
+                            <input type="number" id="mu" class="irr-input" value="-10" step="0.5" />
+                            <p class="irr-help">
+                                Centerline annual change in revenue (negative = decay).
+                            </p>
+                        </div>
+
+
+                        <div class="irr-input-group">
+                            <label for="sigma" class="irr-label">Sigma (volatility, %)</label>
+                            <input type="number" id="sigma" class="irr-input" value="30" step="1" />
+                            <p class="irr-help">
+                                Volatility band around mu (drives Monte Carlo spread).
+                            </p>
+                        </div>
+                    </div>
+                </details>
+
+
+                <div class="irr-actions">
+                    <span id="irr-status" class="irr-status"></span>
+                </div>
+            </section>
+
+
+            <!-- Summary Cards -->
+            <section class="irr-summary-grid">
+                <div class="irr-card irr-summary-card">
+                    <h3 class="irr-summary-label">Total Budget Outlay</h3>
+                    <p class="irr-summary-value" id="summary-budget">$0</p>
+                    <p class="irr-summary-caption">
+                        100% recoup + 50% promo (full spend). This is your initial investment.
+                    </p>
+                </div>
+
+
+                <div class="irr-card irr-summary-card">
+                    <h3 class="irr-summary-label">IRR (Label)</h3>
+                    <p class="irr-summary-value" id="summary-irr">–</p>
+                    <p class="irr-summary-caption">
+                        IRR on label cash flows (Deterministic).
+                        <br>
+                        <span style="font-size: 10px; color: #a0aec0;">
+                            Low (P5): <span id="summary-irr-p5" style="color: #cbd5f5;">–</span>
+                            &nbsp;|&nbsp;
+                            High (P95): <span id="summary-irr-p95" style="color: #cbd5f5;">–</span>
+                        </span>
+                    </p>
+                </div>
+
+                <div class="irr-card irr-summary-card" style="display: none;">
+                    <h3 class="irr-summary-label">NPV (Label)</h3>
+                    <p class="irr-summary-value" id="summary-npv">–</p>
+                    <p class="irr-summary-caption">
+                        Net Present Value of label cash flows (Discount Rate applied).
+                    </p>
+                </div>
+
+                <div class="irr-card irr-summary-card">
+                    <h3 class="irr-summary-label">IRR Rating</h3>
+                    <p class="irr-summary-value" id="summary-rating">–</p>
+                    <p class="irr-summary-caption" id="summary-rating-caption">
+                        Context based on IRR performance.
+                    </p>
+                </div>
+            </section>
+
+
+            <!-- Chart + Streaming Forecast Tables -->
+            <section class="irr-layout">
+                <div class="irr-card irr-table-card irr-full-table">
+                    <h2 class="irr-card-title">Streaming / Revenue Forecast</h2>
+
+
+
+                    <div class="irr-chart-container">
+                        <canvas id="irr-chart"></canvas>
+                    </div>
+
+
+                    <!-- Scrollable wrapper so you can see long-term projections -->
+                    <div class="irr-table-wrapper">
+                        <!-- Year 1 Monthly Streaming Table -->
+                        <h3 class="irr-small-heading">Year 1 Monthly Streaming Forecast</h3>
+                        <table class="irr-table">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>P5 Streams</th>
+                                    <th>Mean Streams</th>
+                                    <th>P95 Streams</th>
+                                </tr>
+                            </thead>
+                            <tbody id="irr-monthly-tbody">
+                                <!-- Filled by JS -->
+                            </tbody>
+                        </table>
+
+
+                        <!-- Annual Streaming Table -->
+                        <h3 class="irr-small-heading" style="margin-top:10px;">Annual Streaming Forecast
+                        </h3>
+                        <table class="irr-table">
+                            <thead>
+                                <tr>
+                                    <th>Year</th>
+                                    <th>P5 Streams</th>
+                                    <th>Mean Streams</th>
+                                    <th>P95 Streams</th>
+                                </tr>
+                            </thead>
+                            <tbody id="irr-annual-tbody">
+                                <!-- Filled by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+
+                    <div class="irr-export-row" style="display: flex; gap: 12px; margin-top: 10px;">
+                        <button id="export-pdf" class="irr-button"
+                            style="background: linear-gradient(135deg, #4fd1c5, #63b3ed); color: #0b1120; font-weight: 600;">Download
+                            Executive PDF</button>
+                        <button id="export-xlsx" class="irr-button"
+                            style="background: rgba(148, 163, 184, 0.15); color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.45);">Download
+                            Analysis (XLSX)</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recoupment J-Curve (Mean Only) -->
+            <section class="irr-layout">
+                <div class="irr-card irr-table-card irr-full-table">
+                    <h2 class="irr-card-title">Recoupment J-Curve (Mean)</h2>
+                    <p class="irr-card-subtitle">
+                        Mean simulation: cumulative label cash flow vs. artist ledger. The $0 line is the recoup
+                        threshold.
+                    </p>
+
+                    <div class="irr-chart-container irr-recoup-wrap">
+                        <canvas id="recoup-mean-chart"></canvas>
+                    </div>
+
+                    <div class="irr-recoup-callouts">
+                        <div class="irr-callout" id="label-recoup-callout">Label expected to recoup after – years</div>
+                        <div class="irr-callout" id="artist-recoup-callout">Artist expected to recoup after – years
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Budget Builder Modal -->
+    <div id="budget-modal" class="irr-modal-overlay">
+        <div class="irr-modal-card">
+            <header class="irr-modal-header">
+                <div>
+                    <h2 class="irr-modal-title">Promo Budget Builder</h2>
+                    <p class="irr-modal-subtitle">Itemize your 50% recoupable marketing & promo spend.</p>
+                </div>
+                <button id="close-modal" class="irr-modal-close">&times;</button>
+            </header>
+
+            <div class="irr-modal-body">
+                <table class="irr-builder-table">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th style="width: 140px;">Amount ($)</th>
+                            <th style="width: 40px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="builder-tbody">
+                        <!-- Rows populated by JS -->
+                    </tbody>
+                </table>
+                <button id="add-row-btn" class="irr-add-row-btn">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add Item
+                </button>
+            </div>
+
+            <footer class="irr-modal-footer">
+                <div class="irr-builder-total-wrap">
+                    <span class="irr-builder-total-label">Total Promo Budget:</span>
+                    <span id="builder-total-value" class="irr-builder-total-amount">$0</span>
+                </div>
+                <div class="irr-modal-actions">
+                    <button id="cancel-builder" class="irr-btn-secondary">Cancel</button>
+                    <button id="save-builder" class="irr-btn-primary">Save & Apply</button>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+
+    <style>
+        @font-face {
+            font-family: "Perfect DOS VGA 437";
+            src: url("https://raw.githubusercontent.com/cpmhadmin/irr-tool/main/fonts/PerfectDOSVGA437.woff2") format("woff2");
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        .cpmh-tty {
+            font-family: "Perfect DOS VGA 437", monospace;
+            font-size: 24px;
+            line-height: 1.2;
+            color: #33ff33;
+            text-shadow: 0 0 10px rgba(51, 255, 51, 0.48);
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            white-space: pre;
+            margin: 0 0 4px;
+        }
+
+        .cpmh-cursor {
+            display: inline-block;
+            width: 0.7ch;
+            height: 1.1em;
+            background: #33ff33;
+            animation: cpmh-blink 0.9s steps(1, end) infinite;
+            box-shadow: 0 0 10px rgba(51, 255, 51, 0.48);
+            margin-left: 2px;
+            vertical-align: bottom;
+        }
+
+        @keyframes cpmh-blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        body {
+            margin: 0;
+            background-color: #00040a;
+        }
+
+        .irr-app {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            color: #f7fafc;
+            background: #00040a;
+            padding: 24px 0;
+            min-height: 100vh;
+        }
+
+
+        .irr-container {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0 16px 32px;
+        }
+
+
+        .irr-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+
+        .irr-title {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            margin: 0 0 4px;
+        }
+
+
+        .irr-subtitle {
+            margin: 0;
+            font-size: 14px;
+            color: #a0aec0;
+            max-width: 640px;
+        }
+
+
+        .irr-badge {
+            align-self: flex-start;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            background: rgba(72, 187, 120, 0.12);
+            color: #9ae6b4;
+            border: 1px solid rgba(72, 187, 120, 0.35);
+        }
+
+
+        .irr-card {
+            background:
+                radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent),
+                linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.9));
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            padding: 16px 18px 18px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(18px);
+        }
+
+
+        .irr-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 4px;
+        }
+
+
+        .irr-card-subtitle {
+            margin: 0 0 12px;
+            font-size: 13px;
+            color: #a0aec0;
+        }
+
+
+        .irr-inputs-card {
+            margin-bottom: 16px;
+        }
+
+
+        .irr-input-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+
+        @media (max-width: 900px) {
+            .irr-input-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+
+        .irr-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-start;
+        }
+
+
+        .irr-label {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+
+        .irr-input-prefix {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.6);
+        }
+
+
+        .irr-input-prefix>span {
+            font-size: 13px;
+            color: #a0aec0;
+        }
+
+
+        .irr-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 13px;
+            color: #e2e8f0;
+        }
+
+
+        .irr-input::placeholder {
+            color: #4a5568;
+        }
+
+
+        .irr-help {
+            margin: 0;
+            font-size: 11px;
+            color: #718096;
+        }
+
+
+        .irr-advanced {
+            margin-top: 6px;
+            padding: 8px 10px;
+            border-radius: 14px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px dashed rgba(148, 163, 184, 0.6);
+        }
+
+
+        .irr-advanced>summary {
+            list-style: none;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #cbd5f5;
+            outline: none;
+        }
+
+
+        .irr-advanced[open]>summary {
+            margin-bottom: 8px;
+        }
+
+
+        .irr-advanced-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px 14px;
+        }
+
+
+        @media (max-width: 900px) {
+            .irr-advanced-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+
+        .irr-actions {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+
+        .irr-button {
+            border: none;
+            border-radius: 999px;
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            background: linear-gradient(135deg, #4fd1c5, #63b3ed);
+            color: #0b1120;
+            box-shadow: 0 14px 24px rgba(56, 178, 172, 0.35);
+            transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
+        }
+
+
+        .irr-button:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+            box-shadow: 0 18px 30px rgba(56, 178, 172, 0.45);
+        }
+
+
+        .irr-status {
+            font-size: 11px;
+            color: #a0aec0;
+        }
+
+
+        .irr-summary-grid {
+            margin-top: 18px;
+            margin-bottom: 16px;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+
+        @media (max-width: 700px) {
+            .irr-summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+
+        .irr-summary-card {
+            padding: 12px 14px;
+        }
+
+
+        .irr-summary-label {
+            margin: 0 0 4px;
+            font-size: 11px;
+            color: #a0aec0;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+
+        .irr-summary-value {
+            margin: 0 0 4px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+
+        .irr-summary-caption {
+            margin: 0;
+            font-size: 11px;
+            color: #718096;
+        }
+
+
+        .irr-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 14px;
+        }
+
+
+        .irr-table-card {
+            max-height: none;
+            overflow-y: visible;
+            /* allow scrolling for long horizons */
+            display: flex;
+            flex-direction: column;
+        }
+
+
+        .irr-table-wrapper {
+            margin-top: 2px;
+            padding-right: 4px;
+        }
+
+
+        .irr-small-heading {
+            font-size: 12px;
+            font-weight: 500;
+            margin: 4px 0;
+            color: #cbd5f5;
+        }
+
+
+        .irr-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+
+        .irr-table th,
+        .irr-table td {
+            padding: 6px 4px;
+            text-align: right;
+            border-bottom: 1px solid rgba(45, 55, 72, 0.9);
+            color: #e2e8f0;
+        }
+
+
+        .irr-table th:first-child,
+        .irr-table td:first-child {
+            text-align: left;
+        }
+
+
+        .irr-table thead th {
+            font-weight: 500;
+            color: #a0aec0;
+            font-size: 11px;
+        }
+
+
+        .irr-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+
+        .irr-export-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+
+        .irr-export-button {
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.7);
+            background: transparent;
+            padding: 6px 12px;
+            font-size: 11px;
+            color: #e2e8f0;
+            cursor: pointer;
+        }
+
+
+        .irr-export-button:hover {
+            background: rgba(148, 163, 184, 0.16);
+        }
+
+        .irr-chart-container {
+            height: 320px;
+            margin-bottom: 24px;
+            position: relative;
+            width: 100%;
+        }
+
+        .irr-input-section-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        @media (max-width: 600px) {
+            .irr-input-section-header {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .irr-recoup-wrap {
+            position: relative;
+        }
+
+        .irr-recoup-callouts {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-top: -8px;
+            margin-bottom: 16px;
+        }
+
+        .irr-callout {
+            font-size: 11px;
+            color: #e2e8f0;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 12px;
+            padding: 6px 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+        }
+
+        .irr-callout::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        #label-recoup-callout::before {
+            background: #4fd1c5;
+            /* Match chart color */
+        }
+
+        #artist-recoup-callout::before {
+            background: #63b3ed;
+            /* Match artist color */
+        }
+
+        @media (max-width: 600px) {
+            .irr-recoup-callouts {
+                left: 10px;
+                right: auto;
+            }
+
+            .irr-callout {
+                max-width: 85vw;
+            }
+        }
+
+        /* Modal & Builder Styles */
+        .irr-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 6, 23, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .irr-modal-overlay.show {
+            display: flex;
+        }
+
+        .irr-modal-card {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.98));
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 560px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+            animation: modalFadeIn 0.2s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .irr-modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .irr-modal-title {
+            margin: 0 0 4px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .irr-modal-subtitle {
+            margin: 0;
+            font-size: 13px;
+            color: #a0aec0;
+        }
+
+        .irr-modal-close {
+            background: transparent;
+            border: none;
+            color: #a0aec0;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .irr-modal-body {
+            padding: 20px 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .irr-builder-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .irr-builder-table th {
+            text-align: left;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #718096;
+            padding-bottom: 12px;
+        }
+
+        .irr-builder-table td {
+            padding: 6px 0;
+        }
+
+        .irr-builder-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #e2e8f0;
+            font-size: 13px;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .irr-builder-input:focus {
+            border-color: rgba(79, 209, 197, 0.6);
+        }
+
+        .irr-builder-amount {
+            text-align: right;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        .irr-remove-row {
+            background: transparent;
+            border: none;
+            color: #f56565;
+            cursor: pointer;
+            padding: 4px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .irr-remove-row:hover {
+            opacity: 1;
+        }
+
+        .irr-add-row-btn {
+            background: rgba(148, 163, 184, 0.1);
+            border: 1px dashed rgba(148, 163, 184, 0.3);
+            border-radius: 8px;
+            color: #cbd5e0;
+            font-size: 13px;
+            padding: 10px;
+            width: 100%;
+            margin-top: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .irr-add-row-btn:hover {
+            background: rgba(148, 163, 184, 0.15);
+            border-color: rgba(148, 163, 184, 0.5);
+        }
+
+        .irr-modal-footer {
+            padding: 20px 24px;
+            border-top: 1px solid rgba(148, 163, 184, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .irr-builder-total-wrap {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .irr-builder-total-label {
+            font-size: 11px;
+            color: #a0aec0;
+            text-transform: uppercase;
+        }
+
+        .irr-builder-total-amount {
+            font-size: 20px;
+            font-weight: 700;
+            color: #4fd1c5;
+        }
+
+        .irr-modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .irr-btn-primary {
+            background: linear-gradient(135deg, #4fd1c5, #63b3ed);
+            border: none;
+            border-radius: 10px;
+            color: #0b1120;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .irr-btn-secondary {
+            background: rgba(148, 163, 184, 0.1);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 10px;
+            color: #e2e8f0;
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .irr-btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .irr-input-btn {
+            background: rgba(79, 209, 197, 0.15);
+            border: 1px solid rgba(79, 209, 197, 0.3);
+            color: #4fd1c5;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: 8px;
+            transition: all 0.2s;
+        }
+
+        .irr-input-btn:hover {
+            background: rgba(79, 209, 197, 0.25);
+            border-color: rgba(79, 209, 197, 0.5);
+        }
+    </style>
+
+
+    </style>
+
+
+    <!-- Chart.js for the line chart is now in the head -->
+
+
+    <script>
+        (function () {
+            const MONEY_STEP = 1000;
+            const N_SIMS = 1000;
+
+
+            // Front-load shape for Year 1 (spiky at release, then flattening)
+            const FRONT_LOAD_BASE = [
+                1.8, 1.4, 1.2, 1.0,
+                0.9, 0.8, 0.75, 0.7,
+                0.65, 0.6, 0.55, 0.5
+            ];
+            const FRONT_LOAD_MONTHS = 12;
+            const FRONT_LOAD_SUM = FRONT_LOAD_BASE.reduce((acc, v) => acc + v, 0);
+
+
+            const appEl = document.getElementById("irr-app");
+            if (!appEl) return;
+
+
+            const currencyFormatter = new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency: "USD",
+                maximumFractionDigits: 0
+            });
+
+
+            const numberFormatter = new Intl.NumberFormat("en-US", {
+                maximumFractionDigits: 0
+            });
+
+
+            const els = {
+                projectName: document.getElementById("project-name"),
+                streetDate: document.getElementById("street-date"),
+                year1Cf: document.getElementById("year1-cf"),
+                physMfgCost: document.getElementById("phys-mfg-cost"),
+                physMultiple: document.getElementById("phys-multiple"),
+                budget100: document.getElementById("budget-100"),
+                budget50: document.getElementById("budget-50"),
+                yearsToMap: document.getElementById("years-to-map"),
+                mu: document.getElementById("mu"),
+                sigma: document.getElementById("sigma"),
+                discountRate: document.getElementById("discount-rate"),
+                artistSplit: document.getElementById("artist-split"),
+                revFactor: document.getElementById("rev-factor"),
+
+
+                status: document.getElementById("irr-status"),
+                summaryBudget: document.getElementById("summary-budget"),
+                summaryIrr: document.getElementById("summary-irr"),
+                summaryIrrP5: document.getElementById("summary-irr-p5"),
+                summaryIrrP95: document.getElementById("summary-irr-p95"),
+                summaryNpv: document.getElementById("summary-npv"),
+                summaryRating: document.getElementById("summary-rating"),
+                summaryRatingCaption: document.getElementById("summary-rating-caption"),
+
+
+                monthlyTbody: document.getElementById("irr-monthly-tbody"),
+                annualTbody: document.getElementById("irr-annual-tbody"),
+
+
+                exportMonthlyBtn: document.getElementById("export-monthly"),
+                exportAnnualBtn: document.getElementById("export-annual"),
+                exportCashFlowBtn: document.getElementById("export-cashflows"),
+
+                exportPdfBtn: document.getElementById("export-pdf"),
+                exportXlsxBtn: document.getElementById("export-xlsx"),
+
+                promoBuilderTrigger: document.getElementById("promo-builder-trigger"),
+                budgetModal: document.getElementById("budget-modal"),
+                closeModal: document.getElementById("close-modal"),
+                cancelBuilder: document.getElementById("cancel-builder"),
+                saveBuilder: document.getElementById("save-builder"),
+                addRowBtn: document.getElementById("add-row-btn"),
+                builderTbody: document.getElementById("builder-tbody"),
+                builderTotalValue: document.getElementById("builder-total-value"),
+                clearBtn: document.getElementById("clear-inputs-btn")
+            };
+
+            const chartCtx = document.getElementById("irr-chart");
+            const recoupMeanChartCtx = document.getElementById("recoup-mean-chart");
+            let irrChart = null;
+            let recoupMeanChart = null;
+
+
+            // For CSV export
+            let latestMonthlyStreams = null;
+            let latestAnnualStreams = null;
+            let latestRecoupResult = null;
+            let itemizedPromoBudget = []; // Stores populated budget items for exports
+
+            // --- Budget Builder Logic ---
+            const defaultPromoItems = [
+                { label: "Mastering", value: 0 },
+                { label: "WW PR", value: 0 },
+                { label: "WW Radio", value: 0 },
+                { label: "Marketing", value: 0 },
+                { label: "Creative Assets", value: 0 },
+                { label: "Copy", value: 0 },
+                { label: "Contingency", value: 0 },
+                { label: "Other", value: 0 },
+                { label: "Other", value: 0 }
+            ];
+
+            function createBuilderRow(label = "", value = 0, isDefault = false) {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>
+                        <input type="text" class="irr-builder-input irr-builder-label" value="${label}" placeholder="Description..." ${isDefault && label !== 'Other' ? '' : ''}>
+                    </td>
+                    <td>
+                        <div class="irr-input-prefix" style="padding: 4px 8px; margin: 0 8px;">
+                            <span style="font-size: 11px;">$</span>
+                            <input type="text" class="irr-input irr-builder-amount" value="${formatMoneyNoSymbol(value)}" placeholder="0">
+                        </div>
+                    </td>
+                    <td>
+                        ${!isDefault ? `
+                        <button class="irr-remove-row" title="Remove Item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>` : ''}
+                    </td>
+                `;
+
+                const amountInput = tr.querySelector(".irr-builder-amount");
+
+                // Add money behavior to builder inputs
+                amountInput.addEventListener("focus", (e) => setTimeout(() => e.target.select(), 0));
+                amountInput.addEventListener("blur", (e) => {
+                    const v = parseFloat(e.target.value.replace(/,/g, "")) || 0;
+                    e.target.value = formatMoneyNoSymbol(v);
+                    calculateBuilderTotal();
+                });
+                amountInput.addEventListener("input", calculateBuilderTotal);
+
+                if (!isDefault) {
+                    tr.querySelector(".irr-remove-row").addEventListener("click", () => {
+                        tr.remove();
+                        calculateBuilderTotal();
+                    });
+                }
+
+                return tr;
+            }
+
+            function calculateBuilderTotal() {
+                let total = 0;
+                els.builderTbody.querySelectorAll(".irr-builder-amount").forEach(input => {
+                    const v = parseFloat(input.value.replace(/,/g, "")) || 0;
+                    total += v;
+                });
+                els.builderTotalValue.textContent = currencyFormatter.format(total);
+                return total;
+            }
+
+            function initBuilder() {
+                els.builderTbody.innerHTML = "";
+                defaultPromoItems.forEach(item => {
+                    els.builderTbody.appendChild(createBuilderRow(item.label, item.value, true));
+                });
+                calculateBuilderTotal();
+            }
+
+            els.promoBuilderTrigger.addEventListener("click", (e) => {
+                e.preventDefault();
+                els.budgetModal.classList.add("show");
+                // Optional: attempt to pre-load current value or items if we added persistence for them
+            });
+
+            const closeBuilder = () => els.budgetModal.classList.remove("show");
+            els.closeModal.addEventListener("click", closeBuilder);
+            els.cancelBuilder.addEventListener("click", closeBuilder);
+
+            els.addRowBtn.addEventListener("click", () => {
+                const rowCount = els.builderTbody.querySelectorAll("tr").length;
+                if (rowCount < 20) {
+                    els.builderTbody.appendChild(createBuilderRow("", 0, false));
+                    els.builderTbody.parentElement.parentElement.scrollTop = els.builderTbody.parentElement.parentElement.scrollHeight;
+                }
+            });
+
+            els.saveBuilder.addEventListener("click", () => {
+                const total = calculateBuilderTotal();
+
+                // Persist the items for reports
+                itemizedPromoBudget = [];
+                els.builderTbody.querySelectorAll("tr").forEach(tr => {
+                    const label = tr.querySelector(".irr-builder-label").value.trim();
+                    const amount = parseFloat(tr.querySelector(".irr-builder-amount").value.replace(/,/g, "")) || 0;
+                    if (amount > 0) {
+                        itemizedPromoBudget.push({ label, amount });
+                    }
+                });
+
+                els.budget50.value = formatMoneyNoSymbol(total);
+                els.budget50.dispatchEvent(new Event("input"));
+                els.budget50.dispatchEvent(new Event("blur"));
+                closeBuilder();
+            });
+
+            // Close modal on click outside
+            els.budgetModal.addEventListener("click", (e) => {
+                if (e.target === els.budgetModal) closeBuilder();
+            });
+
+            initBuilder();
+
+
+
+            function readFloat(el, fallback = 0) {
+                if (!el) return fallback;
+                const raw = (el.value || "").toString().replace(/,/g, "").trim();
+                const v = parseFloat(raw);
+                return isNaN(v) ? fallback : v;
+            }
+
+
+            function formatMoneyNoSymbol(value) {
+                if (typeof value !== "number" || isNaN(value)) return "";
+                return numberFormatter.format(value);
+            }
+
+            function getExportFilename(baseName) {
+                const proj = (els.projectName.value || "").trim().replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                return proj ? `${proj}_${baseName}.csv` : `${baseName}.csv`;
+            }
+
+            function getCSVHeader() {
+                const proj = (els.projectName.value || "N/A").trim();
+                const date = (els.streetDate.value || "N/A").trim();
+                return `Project Name,${proj}\nStreet Date,${date}\n\n`;
+            }
+
+
+            function attachMoneyBehavior(el, customStep = MONEY_STEP) {
+                if (!el) return;
+
+
+                const raw = (el.value || "").toString().replace(/,/g, "");
+                const initial = parseFloat(raw);
+                if (!isNaN(initial)) {
+                    el.value = formatMoneyNoSymbol(initial);
+                }
+
+
+                el.addEventListener("focus", function () {
+                    setTimeout(() => el.select(), 0);
+                });
+
+
+                el.addEventListener("blur", function () {
+                    const v = readFloat(el, null);
+                    el.value = v !== null ? formatMoneyNoSymbol(v) : "";
+                    // Programmatic change doesn't fire input/change by default, so fire it manually
+                    el.dispatchEvent(new Event("input"));
+                });
+
+
+                el.addEventListener("keydown", function (e) {
+                    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                        e.preventDefault();
+                        let current = readFloat(el, 0);
+                        if (isNaN(current)) current = 0;
+
+
+                        if (e.key === "ArrowUp") {
+                            current += customStep;
+                        } else {
+                            current -= customStep;
+                            if (current < 0) current = 0;
+                        }
+
+
+                        el.value = formatMoneyNoSymbol(current);
+                        // Fire input event so simulation listener catches it
+                        el.dispatchEvent(new Event("input"));
+                    }
+                });
+            }
+
+
+            attachMoneyBehavior(els.year1Cf, 100000);
+            [els.budget100, els.budget50, els.physMfgCost].forEach(el => attachMoneyBehavior(el));
+
+
+            function randomUniform(min, max) {
+                return min + (max - min) * Math.random();
+            }
+
+
+            function percentileFromSorted(sortedArr, p) {
+                const n = sortedArr.length;
+                if (n === 0) return 0;
+                if (p <= 0) return sortedArr[0];
+                if (p >= 1) return sortedArr[n - 1];
+                const index = (n - 1) * p;
+                const lower = Math.floor(index);
+                const upper = Math.ceil(index);
+                const weight = index - lower;
+                if (upper === lower) return sortedArr[lower];
+                return sortedArr[lower] * (1 - weight) + sortedArr[upper] * weight;
+            }
+
+
+            // Year 1 front-load + multi-year Monte Carlo (revenue paths)
+            function simulateRevenuePaths(year1Revenue, physicalRevenue, yearsToMap, muPct, sigmaPct, nSims) {
+                const months = yearsToMap * 12;
+                const paths = new Array(nSims);
+
+
+                const muAnnual = muPct / 100;
+                const sigmaAnnual = sigmaPct / 100;
+
+
+                // Monthly changes for Year 2+
+                const baseMonthlyChange = muAnnual / 12;
+                const spreadMonthly = sigmaAnnual / 12;
+
+
+                // Pre-calculate deterministic Year 1 base values
+                const monthsYear1 = Math.min(FRONT_LOAD_MONTHS, months);
+                const baseYear1 = new Array(monthsYear1);
+                for (let m = 0; m < monthsYear1; m++) {
+                    const weight = FRONT_LOAD_BASE[m] / FRONT_LOAD_SUM;
+                    // Apply weight to both digital and physical revenue
+                    baseYear1[m] = (year1Revenue + physicalRevenue) * weight;
+                }
+
+
+                for (let s = 0; s < nSims; s++) {
+                    const monthly = new Array(months);
+                    let currentVal = 0;
+
+
+                    for (let m = 0; m < months; m++) {
+                        // Determine expected growth (trend) for this step
+                        let expectedGrowth = 0;
+
+
+                        if (m < monthsYear1) {
+                            // YEAR 1 LOGIC
+                            if (m === 0) {
+                                // Month 0: Apply noise around the starting base value
+                                const base0 = baseYear1[0];
+                                // We simulate a 'deviation' from the ideal start
+                                const r = randomUniform(-spreadMonthly, spreadMonthly);
+                                currentVal = base0 * (1 + r);
+                                if (currentVal < 0) currentVal = 0;
+                                monthly[m] = currentVal;
+                                continue; // Skip the standard "step" logic for index 0
+                            } else {
+                                // Month 1..11: "Growth" is the ratio of the shape curve
+                                const ratio = baseYear1[m] / baseYear1[m - 1];
+                                expectedGrowth = ratio - 1;
+                            }
+                        } else {
+                            // YEAR 2+ LOGIC: "Growth" is the constant Mu
+                            expectedGrowth = baseMonthlyChange;
+                        }
+
+
+                        // Apply Volatility
+                        const r = randomUniform(
+                            expectedGrowth - spreadMonthly,
+                            expectedGrowth + spreadMonthly
+                        );
+
+                        currentVal = currentVal * (1 + r);
+                        if (currentVal < 0) currentVal = 0;
+                        monthly[m] = currentVal;
+                    }
+
+
+                    paths[s] = monthly;
+                }
+
+
+                return { paths, months };
+            }
+
+
+            // Deterministic monthly path (for IRR & payback)
+            function buildDeterministicMonthlyPath(year1Revenue, physicalRevenue, yearsToMap, muPct) {
+                const months = yearsToMap * 12;
+                const monthly = new Array(months);
+
+
+                const monthsYear1 = Math.min(FRONT_LOAD_MONTHS, months);
+                for (let m = 0; m < monthsYear1; m++) {
+                    const weight = FRONT_LOAD_BASE[m] / FRONT_LOAD_SUM;
+                    monthly[m] = (year1Revenue + physicalRevenue) * weight;
+                }
+
+
+                if (months > monthsYear1) {
+                    const muAnnual = muPct / 100;
+                    const baseMonthlyChange = muAnnual / 12;
+                    let cf = monthly[monthsYear1 - 1];
+
+
+                    for (let m = monthsYear1; m < months; m++) {
+                        const factor = 1 + baseMonthlyChange;
+                        cf = cf * factor;
+                        if (cf < 0) cf = 0;
+                        monthly[m] = cf;
+                    }
+                }
+
+
+                return monthly;
+            }
+
+
+            // Year 1 monthly summary (revenue)
+            function summarizeYear1Monthly(paths) {
+                const nSims = paths.length;
+                if (nSims === 0) return { months: [], mean: [], p5: [], p95: [] };
+
+
+                const monthsInPaths = paths[0].length;
+                const months = Math.min(12, monthsInPaths);
+
+
+                const monthsArr = [];
+                const meanArr = [];
+                const p5Arr = [];
+                const p95Arr = [];
+
+
+                for (let m = 0; m < months; m++) {
+                    const totals = new Array(nSims);
+                    for (let s = 0; s < nSims; s++) {
+                        totals[s] = paths[s][m] || 0;
+                    }
+                    totals.sort((a, b) => a - b);
+                    const mean =
+                        totals.reduce((acc, v) => acc + v, 0) / Math.max(1, nSims);
+                    const p5 = percentileFromSorted(totals, 0.05);
+                    const p95 = percentileFromSorted(totals, 0.95);
+
+
+                    monthsArr.push(m + 1);
+                    meanArr.push(mean);
+                    p5Arr.push(p5);
+                    p95Arr.push(p95);
+                }
+
+
+                return { months: monthsArr, mean: meanArr, p5: p5Arr, p95: p95Arr };
+            }
+
+
+            // Annual summary (revenue)
+            function summarizeAnnual(paths, yearsToMap) {
+                const monthsPerYear = 12;
+                const nSims = paths.length;
+                if (nSims === 0) return { years: [], mean: [], p5: [], p95: [] };
+
+
+                const months = paths[0].length;
+
+
+                const years = [];
+                const meanByYear = [];
+                const p5ByYear = [];
+                const p95ByYear = [];
+
+
+                for (let year = 1; year <= yearsToMap; year++) {
+                    const startIdx = (year - 1) * monthsPerYear;
+                    const endIdx = Math.min(year * monthsPerYear, months);
+                    if (startIdx >= months) break;
+
+
+                    const totals = new Array(nSims);
+
+
+                    for (let s = 0; s < nSims; s++) {
+                        const monthly = paths[s];
+                        let sum = 0;
+                        for (let m = startIdx; m < endIdx; m++) {
+                            sum += monthly[m];
+                        }
+                        totals[s] = sum;
+                    }
+
+
+                    totals.sort((a, b) => a - b);
+                    const mean =
+                        totals.reduce((acc, v) => acc + v, 0) / Math.max(1, nSims);
+                    const p5 = percentileFromSorted(totals, 0.05);
+                    const p95 = percentileFromSorted(totals, 0.95);
+
+
+                    years.push(year);
+                    meanByYear.push(mean);
+                    p5ByYear.push(p5);
+                    p95ByYear.push(p95);
+                }
+
+
+                return { years, meanByYear, p5ByYear, p95ByYear };
+            }
+
+
+            function renderMonthlyTable(months, p5, mean, p95) {
+                const tbody = els.monthlyTbody;
+                if (!tbody) return;
+                tbody.innerHTML = "";
+
+
+                months.forEach((month, idx) => {
+                    const tr = document.createElement("tr");
+
+
+                    const tdMonth = document.createElement("td");
+                    tdMonth.textContent = "Month " + month;
+
+
+                    const tdP5 = document.createElement("td");
+                    tdP5.textContent = numberFormatter.format(p5[idx]);
+
+
+                    const tdMean = document.createElement("td");
+                    tdMean.textContent = numberFormatter.format(mean[idx]);
+
+
+                    const tdP95 = document.createElement("td");
+                    tdP95.textContent = numberFormatter.format(p95[idx]);
+
+
+                    tr.appendChild(tdMonth);
+                    tr.appendChild(tdP5);
+                    tr.appendChild(tdMean);
+                    tr.appendChild(tdP95);
+
+
+                    tbody.appendChild(tr);
+                });
+            }
+
+
+            function renderAnnualTable(years, p5, mean, p95) {
+                const tbody = els.annualTbody;
+                if (!tbody) return;
+                tbody.innerHTML = "";
+
+
+                years.forEach((year, idx) => {
+                    const tr = document.createElement("tr");
+
+
+                    const tdYear = document.createElement("td");
+                    tdYear.textContent = "Year " + year;
+
+
+                    const tdP5 = document.createElement("td");
+                    tdP5.textContent = numberFormatter.format(p5[idx]);
+
+
+                    const tdMean = document.createElement("td");
+                    tdMean.textContent = numberFormatter.format(mean[idx]);
+
+
+                    const tdP95 = document.createElement("td");
+                    tdP95.textContent = numberFormatter.format(p95[idx]);
+
+
+                    tr.appendChild(tdYear);
+                    tr.appendChild(tdP5);
+                    tr.appendChild(tdMean);
+                    tr.appendChild(tdP95);
+
+
+                    tbody.appendChild(tr);
+                });
+            }
+
+
+            function renderChart(years, p5, mean, p95) {
+                if (!chartCtx) return;
+
+
+                if (irrChart) {
+                    irrChart.destroy();
+                }
+
+
+                irrChart = new Chart(chartCtx, {
+                    type: "line",
+                    data: {
+                        labels: years.map((y) => "Year " + y),
+                        datasets: [
+                            {
+                                label: "P5",
+                                data: p5,
+                                borderWidth: 1.5,
+                                borderDash: [4, 4],
+                                pointRadius: 0,
+                                tension: 0.25
+                            },
+                            {
+                                label: "Mean",
+                                data: mean,
+                                borderWidth: 2,
+                                pointRadius: 2,
+                                tension: 0.25
+                            },
+                            {
+                                label: "P95",
+                                data: p95,
+                                borderWidth: 1.5,
+                                borderDash: [4, 4],
+                                pointRadius: 0,
+                                tension: 0.25
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    font: { size: 11 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (ctx) {
+                                        const v = ctx.parsed.y || 0;
+                                        return " " + currencyFormatter.format(v);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    font: { size: 11 }
+                                },
+                                grid: {
+                                    color: "rgba(99, 110, 139, 0.35)"
+                                }
+                            },
+                            y: {
+                                ticks: {
+                                    font: { size: 11 },
+                                    callback: function (value) {
+                                        return numberFormatter.format(value);
+                                    }
+                                },
+                                grid: {
+                                    color: "rgba(99, 110, 139, 0.35)"
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Draw a prominent $0 (recoup) line
+            const zeroLinePlugin = {
+                id: "zeroLinePlugin",
+                afterDraw(chart, args, pluginOptions) {
+                    const { ctx, chartArea, scales } = chart;
+                    if (!chartArea || !scales || !scales.y) return;
+                    const y0 = scales.y.getPixelForValue(0);
+                    if (y0 < chartArea.top || y0 > chartArea.bottom) return;
+
+                    ctx.save();
+                    ctx.strokeStyle = "rgba(226, 232, 240, 0.95)";
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(chartArea.left, y0);
+                    ctx.lineTo(chartArea.right, y0);
+                    ctx.stroke();
+
+                    // label
+                    ctx.fillStyle = "rgba(226, 232, 240, 0.95)";
+                    ctx.font = "12px system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif";
+                    ctx.fillText("$0 (Recoup)", chartArea.left + 6, Math.max(chartArea.top + 14, y0 - 8));
+                    ctx.restore();
+                }
+            };
+
+            function renderRecoupMeanChart(months, labelCumulativeMean, artistLedgerMean, labelRecoupYears, artistRecoupYears) {
+                if (!recoupMeanChartCtx) return;
+
+                if (recoupMeanChart) recoupMeanChart.destroy();
+
+                const labels = months.map((m) => "Month " + m);
+
+                // Callouts
+                const labelEl = document.getElementById("label-recoup-callout");
+                const artistEl = document.getElementById("artist-recoup-callout");
+                if (labelEl) {
+                    labelEl.textContent = "Label expected to recoup after " + (labelRecoupYears != null ? labelRecoupYears.toFixed(1) : "–") + " years";
+                }
+                if (artistEl) {
+                    artistEl.textContent = "Artist expected to recoup after " + (artistRecoupYears != null ? artistRecoupYears.toFixed(1) : "–") + " years";
+                }
+
+                recoupMeanChart = new Chart(recoupMeanChartCtx, {
+                    type: "line",
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                label: "Label (Mean Cumulative CF)",
+                                data: labelCumulativeMean,
+                                borderWidth: 2.25,
+                                pointRadius: 0,
+                                tension: 0.25
+                            },
+                            {
+                                label: "Artist (Mean Ledger)",
+                                data: artistLedgerMean,
+                                borderWidth: 2.25,
+                                pointRadius: 0,
+                                tension: 0.25,
+                                borderDash: [6, 4]
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { font: { size: 11 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (ctx) {
+                                        const v = ctx.parsed.y || 0;
+                                        return " " + ctx.dataset.label + ": " + currencyFormatter.format(v);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { font: { size: 11 }, maxRotation: 45, minRotation: 0 },
+                                grid: { color: "rgba(99, 110, 139, 0.35)" }
+                            },
+                            y: {
+                                ticks: {
+                                    font: { size: 11 },
+                                    callback: function (value) { return currencyFormatter.format(value); }
+                                },
+                                grid: { color: "rgba(99, 110, 139, 0.35)" }
+                            }
+                        }
+                    },
+                    plugins: [zeroLinePlugin]
+                });
+            }
+
+
+
+            // IRR via bisection on annual cash flows
+            function computeIRR(cashFlows) {
+                if (!cashFlows || cashFlows.length < 2) return null;
+
+
+                const npv = (rate) => {
+                    let total = 0;
+                    for (let t = 0; t < cashFlows.length; t++) {
+                        total += cashFlows[t] / Math.pow(1 + rate, t);
+                    }
+                    return total;
+                };
+
+
+                let low = -0.99;
+                let high = 5.0;
+                let npvLow = npv(low);
+                let npvHigh = npv(high);
+
+
+                if (npvLow * npvHigh > 0) {
+                    return null;
+                }
+
+
+                const maxIter = 100;
+                const tol = 1e-6;
+                for (let i = 0; i < maxIter; i++) {
+                    const mid = (low + high) / 2;
+                    const npvMid = npv(mid);
+                    if (Math.abs(npvMid) < tol) {
+                        return mid;
+                    }
+                    if (npvLow * npvMid < 0) {
+                        high = mid;
+                        npvHigh = npvMid;
+                    } else {
+                        low = mid;
+                        npvLow = npvMid;
+                    }
+                }
+                return (low + high) / 2;
+            }
+
+
+            // Recoup waterfall & payback (deterministic path)
+            function computeRecoupAndIRR(monthlyRevenue, budget100, budget50, physMfgCost, artistSplitPct, yearsToMap, discountRatePct) {
+                const months = monthlyRevenue.length;
+                const totalBudgetOutlay = budget100 + budget50 + physMfgCost;
+
+
+                const labelCFMonthly = new Array(months + 1);
+                labelCFMonthly[0] = -totalBudgetOutlay;
+
+
+                // Recoupable balance from artist’s account:
+                // Note: physMfgCost is treated like budget50 (50% recoupable)
+                const recoupableFromArtist = budget100 + 0.5 * (budget50 + physMfgCost);
+                // Artist ledger starts negative and moves toward 0 as recoup happens
+                let artistLedger = -recoupableFromArtist;
+
+
+                let cumulativeLabel = labelCFMonthly[0];
+                let labelPaybackMonth = null;   // when artistLedger first hits >= 0
+                let artistPaybackMonth = null;  // when artist first receives cash in hand
+
+
+                const artistSplit = artistSplitPct / 100;
+                const timeline = [];
+
+
+                // Month 0 outlay
+                timeline.push({
+                    month: 0,
+                    revenue: 0,
+                    labelCF: labelCFMonthly[0],
+                    artistRoyalty: 0,
+                    artistLedger,
+                    cumulativeLabel: labelCFMonthly[0]
+                });
+
+
+                for (let m = 1; m <= months; m++) {
+                    const rev = monthlyRevenue[m - 1] || 0;
+                    let labelCF = 0;
+                    let artistCashFlow = 0;
+
+
+                    // Correct Accounting: Every dollar generates a royalty based on split
+                    const monthlyRoyaltyAccrued = rev * artistSplit;
+
+
+                    if (artistLedger < 0) {
+                        // Artist is unrecouped. 
+                        // 100% of revenue flows to the labels pocket, but only the 
+                        // artist's portion reduces their debt.
+                        artistLedger += monthlyRoyaltyAccrued;
+
+
+                        if (artistLedger > 0) {
+                            // Recouped this month! 
+                            // The portion of royalty above zero is paid out to artist.
+                            artistCashFlow = artistLedger;
+                            // Label keeps everything else
+                            labelCF = rev - artistCashFlow;
+                        } else {
+                            // Still unrecouped. Label keeps 100%.
+                            labelCF = rev;
+                            artistCashFlow = 0;
+                        }
+                    } else {
+                        // Already recouped. Standard split.
+                        artistCashFlow = monthlyRoyaltyAccrued;
+                        labelCF = rev - artistCashFlow;
+                        artistLedger += artistCashFlow;
+                    }
+
+
+                    labelCFMonthly[m] = labelCF;
+                    cumulativeLabel += labelCF;
+
+
+                    // Record for export
+                    timeline.push({
+                        month: m,
+                        revenue: rev,
+                        labelCF,
+                        artistRoyalty: artistCashFlow, // Actual cash paid to artist
+                        artistLedger,
+                        cumulativeLabel
+                    });
+
+
+                    // LABEL recoup: when label cumulative cash flow crosses from negative to >= 0
+                    if (labelPaybackMonth === null && cumulativeLabel >= 0) {
+                        labelPaybackMonth = m;
+                    }
+
+
+
+                    // ARTIST payback: when they first receive cash
+                    if (artistPaybackMonth === null && artistCashFlow > 0) {
+                        artistPaybackMonth = m;
+                    }
+                }
+
+
+                // Annualize label CFs for IRR
+                const years = Math.ceil(months / 12);
+                const cashFlowsAnnual = new Array(years + 1).fill(0);
+                cashFlowsAnnual[0] = labelCFMonthly[0];
+
+
+                for (let y = 1; y <= years; y++) {
+                    const startMonth = (y - 1) * 12 + 1;
+                    const endMonth = Math.min(y * 12, months);
+                    let sum = 0;
+                    for (let m = startMonth; m <= endMonth; m++) {
+                        sum += labelCFMonthly[m] || 0;
+                    }
+                    cashFlowsAnnual[y] = sum;
+                }
+
+
+                const irr = computeIRR(cashFlowsAnnual);
+
+                // NPV calculation using annual cash flows
+                const discountRate = (discountRatePct || 0) / 100;
+                let npv = 0;
+                for (let t = 0; t < cashFlowsAnnual.length; t++) {
+                    npv += cashFlowsAnnual[t] / Math.pow(1 + discountRate, t);
+                }
+
+
+                const labelPaybackYears = labelPaybackMonth ? labelPaybackMonth / 12 : null;
+                const artistPaybackYears = artistPaybackMonth ? artistPaybackMonth / 12 : null;
+
+
+                return { irr, npv, labelPaybackYears, artistPaybackYears, timeline };
+            }
+
+
+
+            function downloadCSV(filename, csv) {
+                const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.display = "none";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+
+
+            function runSimulationAndUpdate() {
+                const revFactor = readFloat(els.revFactor, 0);
+                const year1Streams = readFloat(els.year1Cf, 0);
+                const year1Revenue = year1Streams * revFactor;
+
+                const physMfgCost = readFloat(els.physMfgCost, 0);
+                const physMultiple = readFloat(els.physMultiple, 0);
+                const physicalRevenue = physMfgCost * physMultiple;
+
+                const budget100 = readFloat(els.budget100, 0);
+                const budget50 = readFloat(els.budget50, 0);
+                const yearsToMap = Math.max(1, Math.floor(readFloat(els.yearsToMap, 10)));
+                const muPct = readFloat(els.mu, 0);
+                const sigmaPct = readFloat(els.sigma, 0);
+                const artistSplitPct = readFloat(els.artistSplit, 50);
+
+
+                if (year1Revenue + physicalRevenue <= 0) {
+                    els.status.textContent =
+                        "Enter Year 1 streams or physical goods data to run the forecast.";
+                    return;
+                }
+
+
+                const totalBudgetOutlay = budget100 + budget50 + physMfgCost;
+                els.summaryBudget.textContent = currencyFormatter.format(totalBudgetOutlay);
+
+
+                els.status.textContent = "Running 1,000 simulations…";
+
+
+                const { paths } = simulateRevenuePaths(
+                    year1Revenue,
+                    physicalRevenue,
+                    yearsToMap,
+                    muPct,
+                    sigmaPct,
+                    N_SIMS
+                );
+
+
+                // Revenue summaries
+                const monthlyRevSummary = summarizeYear1Monthly(paths);
+                const annualRevSummary = summarizeAnnual(paths, yearsToMap);
+
+
+                // Convert to streams using revFactor, if provided
+                let monthlyStreamsSummary = { months: [], p5: [], mean: [], p95: [] };
+                let annualStreamsSummary = { years: [], p5: [], mean: [], p95: [] };
+
+
+                if (revFactor > 0) {
+                    monthlyStreamsSummary.months = monthlyRevSummary.months;
+                    monthlyStreamsSummary.p5 = monthlyRevSummary.p5.map(v => v / revFactor);
+                    monthlyStreamsSummary.mean = monthlyRevSummary.mean.map(v => v / revFactor);
+                    monthlyStreamsSummary.p95 = monthlyRevSummary.p95.map(v => v / revFactor);
+
+
+                    annualStreamsSummary.years = annualRevSummary.years;
+                    annualStreamsSummary.p5 = annualRevSummary.p5ByYear.map(v => v / revFactor);
+                    annualStreamsSummary.mean = annualRevSummary.meanByYear.map(v => v / revFactor);
+                    annualStreamsSummary.p95 = annualRevSummary.p95ByYear.map(v => v / revFactor);
+                } else {
+                    // Fallback: treat revenue units as "streams"
+                    monthlyStreamsSummary = {
+                        months: monthlyRevSummary.months,
+                        p5: monthlyRevSummary.p5,
+                        mean: monthlyRevSummary.mean,
+                        p95: monthlyRevSummary.p95
+                    };
+                    annualStreamsSummary = {
+                        years: annualRevSummary.years,
+                        p5: annualRevSummary.p5ByYear,
+                        mean: annualRevSummary.meanByYear,
+                        p95: annualRevSummary.p95ByYear
+                    };
+                }
+
+
+                // Render tables and chart
+                renderMonthlyTable(
+                    monthlyStreamsSummary.months,
+                    monthlyStreamsSummary.p5,
+                    monthlyStreamsSummary.mean,
+                    monthlyStreamsSummary.p95
+                );
+
+
+                renderAnnualTable(
+                    annualStreamsSummary.years,
+                    annualStreamsSummary.p5,
+                    annualStreamsSummary.mean,
+                    annualStreamsSummary.p95
+                );
+
+
+                // Chart still shows revenue P5/Mean/P95
+                renderChart(
+                    annualRevSummary.years,
+                    annualRevSummary.p5ByYear,
+                    annualRevSummary.meanByYear,
+                    annualRevSummary.p95ByYear
+                );
+
+
+                latestMonthlyStreams = monthlyStreamsSummary;
+                latestAnnualStreams = annualStreamsSummary;
+
+
+                // Deterministic path for IRR + payback (Mean/Base Case)
+                const deterministicMonthlyRevenue = buildDeterministicMonthlyPath(
+                    year1Revenue,
+                    physicalRevenue,
+                    yearsToMap,
+                    muPct
+                );
+
+                function getMonthlyPercentilesFullTerm(paths, months) {
+                    const p5Path = new Array(months);
+                    const p95Path = new Array(months);
+                    const nSims = paths.length;
+
+                    for (let m = 0; m < months; m++) {
+                        const totals = new Array(nSims);
+                        for (let s = 0; s < nSims; s++) {
+                            totals[s] = paths[s][m] || 0;
+                        }
+                        totals.sort((a, b) => a - b);
+                        p5Path[m] = percentileFromSorted(totals, 0.05);
+                        p95Path[m] = percentileFromSorted(totals, 0.95);
+                    }
+                    return { p5Path, p95Path };
+                }
+
+                const { p5Path, p95Path } = getMonthlyPercentilesFullTerm(paths, yearsToMap * 12);
+
+
+                const discountRatePct = readFloat(els.discountRate, 10);
+
+                // Compute Base Case
+                const recoupResult = computeRecoupAndIRR(
+                    deterministicMonthlyRevenue,
+                    budget100,
+                    budget50,
+                    physMfgCost,
+                    artistSplitPct,
+                    yearsToMap,
+                    discountRatePct
+                );
+                latestRecoupResult = recoupResult;
+
+                // Compute Low Case (P5)
+                const recoupResultP5 = computeRecoupAndIRR(
+                    p5Path,
+                    budget100,
+                    budget50,
+                    physMfgCost,
+                    artistSplitPct,
+                    yearsToMap,
+                    discountRatePct
+                );
+
+                // Compute High Case (P95)
+                const recoupResultP95 = computeRecoupAndIRR(
+                    p95Path,
+                    budget100,
+                    budget50,
+                    physMfgCost,
+                    artistSplitPct,
+                    yearsToMap,
+                    discountRatePct
+                );
+
+
+                // IRR (label) from deterministic path
+                if (els.summaryIrr) {
+                    // Base
+                    if (recoupResult.irr == null || !isFinite(recoupResult.irr)) {
+                        els.summaryIrr.textContent = "–";
+                    } else {
+                        const irrPct = recoupResult.irr * 100;
+                        els.summaryIrr.textContent = irrPct.toFixed(1) + "%";
+                    }
+
+                    // P5
+                    if (els.summaryIrrP5) {
+                        if (recoupResultP5.irr == null || !isFinite(recoupResultP5.irr)) {
+                            els.summaryIrrP5.textContent = "–";
+                        } else {
+                            const irrPct = recoupResultP5.irr * 100;
+                            els.summaryIrrP5.textContent = irrPct.toFixed(1) + "%";
+                        }
+                    }
+
+                    // P95
+                    if (els.summaryIrrP95) {
+                        if (recoupResultP95.irr == null || !isFinite(recoupResultP95.irr)) {
+                            els.summaryIrrP95.textContent = "–";
+                        } else {
+                            const irrPct = recoupResultP95.irr * 100;
+                            els.summaryIrrP95.textContent = irrPct.toFixed(1) + "%";
+                        }
+                    }
+                }
+
+                // NPV (label)
+                if (els.summaryNpv) {
+                    if (recoupResult.npv == null || !isFinite(recoupResult.npv)) {
+                        els.summaryNpv.textContent = "–";
+                    } else {
+                        els.summaryNpv.textContent = currencyFormatter.format(recoupResult.npv);
+                    }
+                }
+
+                // IRR Rating
+                if (els.summaryRating) {
+                    if (recoupResult.irr == null || !isFinite(recoupResult.irr)) {
+                        els.summaryRating.textContent = "–";
+                        if (els.summaryRatingCaption) els.summaryRatingCaption.textContent = "";
+                        els.summaryRating.style.color = "#e2e8f0"; // reset
+                    } else {
+                        const irrPct = recoupResult.irr * 100;
+                        let ratingLabel = "";
+                        let ratingColor = "#e2e8f0";
+                        let ratingDesc = "";
+
+                        if (irrPct < -10) {
+                            ratingLabel = "In Trouble";
+                            ratingColor = "#ef4444"; // red-500
+                            ratingDesc = "< -10%";
+                        } else if (irrPct < 0) {
+                            ratingLabel = "Loss Leader";
+                            ratingColor = "#f87171"; // red-400
+                            ratingDesc = "-10% to 0%";
+                        } else if (irrPct < 10) {
+                            ratingLabel = "Developing (LP1)";
+                            ratingColor = "#facc15"; // yellow-400
+                            ratingDesc = "0% to 10%";
+                        } else if (irrPct < 20) {
+                            ratingLabel = "Emerging (LP2)";
+                            ratingColor = "#a3e635"; // lime-400
+                            ratingDesc = "10% to 20%";
+                        } else if (irrPct < 30) {
+                            ratingLabel = "Established (LP3)";
+                            ratingColor = "#4ade80"; // green-400
+                            ratingDesc = "20% to 30%";
+                        } else {
+                            ratingLabel = "Profitable";
+                            ratingColor = "#22d3ee"; // cyan-400
+                            ratingDesc = "> 30%";
+                        }
+
+                        els.summaryRating.textContent = ratingLabel;
+                        els.summaryRating.style.color = ratingColor;
+                        if (els.summaryRatingCaption) {
+                            els.summaryRatingCaption.textContent = ratingDesc;
+                        }
+                    }
+                }
+
+
+                // Extract mean recoupment timeline data for combined chart
+                const monthsRecoup = recoupResult.timeline.map(t => t.month);
+                const labelCumulativeMean = recoupResult.timeline.map(t => t.cumulativeLabel);
+                const artistLedgerMean = recoupResult.timeline.map(t => t.artistLedger);
+
+                renderRecoupMeanChart(
+                    monthsRecoup,
+                    labelCumulativeMean,
+                    artistLedgerMean,
+                    recoupResult.labelPaybackYears,
+                    recoupResult.artistPaybackYears
+                );
+
+                els.status.textContent = "Forecast updated from 1,000 simulations.";
+            }
+
+
+            // Auto-run simulation on any input change
+            [
+                els.year1Cf, els.physMfgCost, els.physMultiple, els.budget100, els.budget50,
+                els.yearsToMap, els.mu, els.sigma,
+                els.discountRate, els.artistSplit, els.revFactor
+            ].forEach(el => {
+                if (!el) return;
+                el.addEventListener("input", () => {
+                    try {
+                        runSimulationAndUpdate();
+                    } catch (err) {
+                        console.error(err);
+                    }
+                });
+            });
+
+            appEl.addEventListener("keydown", function (e) {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    try {
+                        if (document.activeElement && document.activeElement.blur) {
+                            document.activeElement.blur();
+                        }
+                    } catch (err) {
+                        console.error(err);
+                    }
+                }
+            });
+
+
+            // CSV export buttons
+            async function exportToPDF() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                const projName = (els.projectName.value || "Prospective Project").trim();
+
+                // Date formatting
+                const rawDate = els.streetDate.value;
+                let formattedDate = "N/A";
+                if (rawDate) {
+                    const [y, m, d] = rawDate.split('-');
+                    formattedDate = `${parseInt(m)}/${parseInt(d)}/${y}`;
+                }
+
+                const logoUrl = "https://upload.wikimedia.org/wikipedia/en/9/9d/Mexican_Summer_logo.png";
+
+                // Helper for currency formatting in PDF
+                const fmc = (v) => currencyFormatter.format(v);
+
+                // --- PAGE 1: COVER PAGE ---
+                try {
+                    const pageWidth = doc.internal.pageSize.getWidth();
+                    const imgW = 20; // Small logo (~50% of previous size of 35 => ~17.5, went with 20 for visibility)
+                    const imgH = 20;
+                    const xCentered = (pageWidth - imgW) / 2;
+                    doc.addImage(logoUrl, "PNG", xCentered, 90, imgW, imgH);
+                } catch (e) {
+                    console.warn("Logo failed to load for Cover", e);
+                }
+
+                doc.setFontSize(24);
+                doc.setTextColor(20, 30, 60);
+                doc.text("Release Economics & Long-Tail Outlook", 105, 125, { align: "center" });
+
+                doc.setFontSize(14);
+                doc.setTextColor(100, 110, 130);
+                doc.text(projName, 105, 140, { align: "center" });
+                doc.text(`Report Generated: ${new Date().toLocaleDateString()}`, 105, 148, { align: "center" });
+
+                // --- PAGE 2: EXECUTIVE SUMMARY ---
+                doc.addPage();
+
+                // Branding (Small Logo Top Right)
+                try {
+                    // Previous was 160, 10, 35, 35. Make 50% smaller -> 17.5. Align right = 210 - 10(margin) - 17.5 = 182.5
+                    doc.addImage(logoUrl, "PNG", 180, 10, 18, 18);
+                } catch (e) {
+                    // ignore
+                }
+
+                doc.setFontSize(22);
+                doc.setTextColor(20, 30, 60);
+                doc.text("Executive Summary", 20, 25);
+
+                doc.setFontSize(12);
+                doc.setTextColor(100, 110, 130);
+                doc.text(`Project: ${projName}`, 20, 35);
+                doc.text(`Street Date: ${formattedDate}`, 20, 42);
+
+                // Year 1 P&L Summary
+                doc.setFontSize(16);
+                doc.setTextColor(20, 30, 60);
+                doc.text("Year 1 Performance Summary", 20, 65);
+
+                const year1Rev = latestAnnualStreams ? latestAnnualStreams.mean[0] * readFloat(els.revFactor, 1) : 0;
+                const totalOutlay = readFloat(els.budget100, 0) + readFloat(els.budget50, 0) + readFloat(els.physMfgCost, 0);
+                const year1Net = year1Rev - totalOutlay;
+                const year1ROI = totalOutlay > 0 ? (year1Net / totalOutlay) * 100 : 0;
+
+                doc.autoTable({
+                    startY: 70, head: [['Metric', 'Value']], body: [
+                        ['Total Budget Outlay', fmc(totalOutlay)],
+                        ['Projected Year 1 Net Revenue (Mean)', fmc(year1Rev)],
+                        ['Year 1 Net Position', fmc(year1Net)],
+                        ['Year 1 ROI (%)', year1ROI.toFixed(1) + '%'],
+                        ['IRR (Label - Long Term)', els.summaryIrr.textContent]
+                    ],
+                    theme: 'striped', headStyles: { fillColor: [45, 55, 72] }
+                });
+
+                // Itemized Budget Breakdown
+                doc.setFontSize(16);
+                doc.text("Itemized Budget Breakdown", 20, doc.lastAutoTable.finalY + 15);
+                const budgetBody = [['Initial Advance (100% Recoup)', fmc(readFloat(els.budget100, 0))]];
+                if (itemizedPromoBudget.length > 0) {
+                    itemizedPromoBudget.forEach(item => budgetBody.push([`Promo: ${item.label}`, fmc(item.amount)]));
+                } else { budgetBody.push(['Promo Budget (General)', fmc(readFloat(els.budget50, 0))]); }
+                if (readFloat(els.physMfgCost, 0) > 0) { budgetBody.push(['Physical Mfg Cost', fmc(readFloat(els.physMfgCost, 0))]); }
+                budgetBody.push([{ content: 'Total Initial Investment', styles: { fontStyle: 'bold' } }, { content: fmc(totalOutlay), styles: { fontStyle: 'bold' } }]);
+                doc.autoTable({
+                    startY: doc.lastAutoTable.finalY + 20, head: [['Item', 'Allocated Amount']], body: budgetBody,
+                    theme: 'grid', headStyles: { fillColor: [79, 209, 197] }, alternateRowStyles: { fillColor: [245, 250, 255] }
+                });
+
+                // --- PAGE 3: TREND ANALYSIS ---
+                doc.addPage();
+                doc.setFontSize(18);
+                doc.text("Long-Term Forecast", 20, 20);
+                if (recoupMeanChart) {
+                    const recoupCanvas = document.getElementById("recoup-mean-chart");
+                    doc.addImage(recoupCanvas.toDataURL("image/png", 1.0), "PNG", 20, 30, 170, 80);
+                }
+                doc.setFontSize(14);
+                doc.text("Annual Forecast Table (Mean Case)", 20, 125);
+
+                if (latestAnnualStreams) {
+                    const annualBody = [];
+                    const revFactor = readFloat(els.revFactor, 1);
+
+                    let firstPositiveIndex = -1;
+
+                    latestAnnualStreams.years.forEach((yr, idx) => {
+                        // Find cumulative cash flow from the recoup result timeline
+                        // Year Y -> Month Y*12
+                        // Safe access
+                        const monthIdx = Math.min(yr * 12, latestRecoupResult.timeline.length - 1);
+                        const cumulative = latestRecoupResult.timeline[monthIdx] ? latestRecoupResult.timeline[monthIdx].cumulativeLabel : 0;
+
+                        if (cumulative >= 0 && firstPositiveIndex === -1) {
+                            firstPositiveIndex = idx;
+                        }
+
+                        annualBody.push([
+                            `Year ${yr}`,
+                            numberFormatter.format(latestAnnualStreams.mean[idx]),
+                            fmc(latestAnnualStreams.mean[idx] * revFactor),
+                            fmc(cumulative)
+                        ]);
+                    });
+
+                    doc.autoTable({
+                        startY: 130,
+                        head: [['Year', 'Mean Streams', 'Projected Net Revenue', 'Cumulative Label CF']],
+                        body: annualBody,
+                        theme: 'striped',
+                        headStyles: { fillColor: [99, 179, 237] },
+                        didParseCell: function (data) {
+                            if (data.section === 'body' && data.row.index === firstPositiveIndex) {
+                                // Apply "subtle green" to the row where cash flow turns positive
+                                data.cell.styles.fillColor = [220, 252, 231]; // green-100 like
+                                data.cell.styles.textColor = [20, 83, 45]; // Dark green text for contrast
+                                data.cell.styles.fontStyle = 'bold';
+                            }
+                        }
+                    });
+                }
+
+                doc.save(getExportFilename("Executive_Report").replace(".csv", ".pdf"));
+            }
+
+            function exportToXLSX() {
+                const XLSX = window.XLSX;
+                const wb = XLSX.utils.book_new();
+
+                // Sheet 1: Year 1 Monthly
+                if (latestMonthlyStreams) {
+                    const sheetData = latestMonthlyStreams.months.map((m, i) => ({
+                        Month: `Month ${m}`,
+                        "P5 Streams": latestMonthlyStreams.p5[i],
+                        "Mean Streams": latestMonthlyStreams.mean[i],
+                        "P95 Streams": latestMonthlyStreams.p95[i]
+                    }));
+                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheetData), "Year 1 Monthly");
+                }
+
+                // Sheet 2: Annual Projections
+                if (latestAnnualStreams) {
+                    const sheetData = latestAnnualStreams.years.map((y, i) => ({
+                        Year: `Year ${y}`,
+                        "P5 Streams": latestAnnualStreams.p5[i],
+                        "Mean Streams": latestAnnualStreams.mean[i],
+                        "P95 Streams": latestAnnualStreams.p95[i],
+                        "Mean Rev ($)": (latestAnnualStreams.mean[i] * readFloat(els.revFactor, 1)).toFixed(2)
+                    }));
+                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheetData), "Annual Projections");
+                }
+
+                // Sheet 3: Full Cash Flow (Mean)
+                if (latestRecoupResult) {
+                    const sheetData = latestRecoupResult.timeline.map(t => ({
+                        Month: t.month,
+                        Revenue: t.revenue,
+                        "Label Cash Flow": t.labelCF,
+                        "Artist Royalty": t.artistRoyalty,
+                        "Artist Ledger": t.artistLedger,
+                        "Cumulative Label CF": t.cumulativeLabel
+                    }));
+                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheetData), "Recoupment Timeline");
+                }
+
+                XLSX.writeFile(wb, getExportFilename("Full_Data_Analysis").replace(".csv", ".xlsx"));
+            }
+
+            if (els.exportPdfBtn) els.exportPdfBtn.addEventListener("click", exportToPDF);
+            if (els.exportXlsxBtn) els.exportXlsxBtn.addEventListener("click", exportToXLSX);
+
+            if (els.exportMonthlyBtn) {
+                els.exportMonthlyBtn.addEventListener("click", function () {
+                    if (!latestMonthlyStreams || !latestMonthlyStreams.months.length) {
+                        alert("Run the forecast first.");
+                        return;
+                    }
+                    const m = latestMonthlyStreams;
+                    let csv = getCSVHeader();
+                    csv += "Month,P5_Streams,Mean_Streams,P95_Streams\n";
+                    for (let i = 0; i < m.months.length; i++) {
+                        csv += [
+                            m.months[i],
+                            m.p5[i],
+                            m.mean[i],
+                            m.p95[i]
+                        ].join(",") + "\n";
+                    }
+                    downloadCSV(getExportFilename("year1_monthly_streams"), csv);
+                });
+            }
+
+
+            if (els.exportAnnualBtn) {
+                els.exportAnnualBtn.addEventListener("click", function () {
+                    if (!latestAnnualStreams || !latestAnnualStreams.years.length) {
+                        alert("Run the forecast first.");
+                        return;
+                    }
+                    const a = latestAnnualStreams;
+                    let csv = getCSVHeader();
+                    csv += "Year,P5_Streams,Mean_Streams,P95_Streams\n";
+                    for (let i = 0; i < a.years.length; i++) {
+                        csv += [
+                            a.years[i],
+                            a.p5[i],
+                            a.mean[i],
+                            a.p95[i]
+                        ].join(",") + "\n";
+                    }
+                    downloadCSV(getExportFilename("annual_streams"), csv);
+                });
+            }
+
+
+            if (els.exportCashFlowBtn) {
+                // Logic handled by Executive PDF and XLSX exports
+            }
+
+            if (els.clearBtn) {
+                els.clearBtn.addEventListener("click", () => {
+                    if (!confirm("Are you sure you want to clear all primary inputs?")) return;
+
+                    // Clear Text/Money Inputs
+                    ["project-name", "year1-cf", "budget-100", "budget-50", "phys-mfg-cost", "phys-multiple"].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            el.value = "";
+                            el.dispatchEvent(new Event("input"));
+                        }
+                    });
+
+                    // Reset Date to Today
+                    const today = new Date().toISOString().split('T')[0];
+                    if (els.streetDate) {
+                        els.streetDate.value = today;
+                    }
+
+                    // Reset Promo Builder
+                    itemizedPromoBudget = [];
+                    initBuilder(); // Resets to default items with 0 values
+
+                    // Re-run simulation
+                    runSimulationAndUpdate();
+                });
+            }
+
+
+            // Persistence: LocalStorage Auto-Save & Restore
+            function getPersistData() {
+                const data = {};
+                for (const [key, el] of Object.entries(els)) {
+                    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+                        data[key] = el.value;
+                    }
+                }
+                return data;
+            }
+
+            function saveToLocalStorage() {
+                const data = getPersistData();
+                localStorage.setItem("irr_calc_data", JSON.stringify(data));
+            }
+
+            function restoreFromData(data) {
+                if (!data) return;
+                for (const [key, val] of Object.entries(data)) {
+                    const el = els[key];
+                    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+                        el.value = val;
+                        if (el.classList.contains("irr-input-money")) {
+                            el.dispatchEvent(new Event("blur"));
+                        }
+                    }
+                }
+                runSimulationAndUpdate();
+            }
+
+            function initPersistence() {
+                // 1. Restore from LocalStorage
+                const saved = localStorage.getItem("irr_calc_data");
+                if (saved) {
+                    try {
+                        restoreFromData(JSON.parse(saved));
+                    } catch (e) {
+                        console.error("Failed to restore from localStorage", e);
+                    }
+                }
+            }
+
+            // Initial run with defaults
+            if (els.streetDate && !els.streetDate.value) {
+                els.streetDate.value = new Date().toLocaleDateString('en-CA');
+            }
+
+            initPersistence();
+
+            // Attach auto-save to input events
+            appEl.addEventListener("input", (e) => {
+                if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+                    saveToLocalStorage();
+                }
+            });
+
+            // Typing Title Effect
+            const titleText = "IRR Calculator";
+            const tEl = document.getElementById('appTitleText');
+            const cur = document.querySelector('.cpmh-cursor');
+            if (tEl) {
+                let i = 0;
+                const tk = () => {
+                    tEl.textContent = titleText.slice(0, i++);
+                    if (i <= titleText.length) {
+                        setTimeout(tk, 70);
+                    } else if (cur) {
+                        setTimeout(() => {
+                            cur.style.opacity = '0';
+                            setTimeout(() => { cur.style.display = 'none'; }, 1000);
+                        }, 3000);
+                    }
+                };
+                setTimeout(tk, 300);
+            }
+
+            runSimulationAndUpdate();
+        })();
+    </script>
+</body>
+
+</html>
