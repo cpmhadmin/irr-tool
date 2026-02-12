@@ -1,0 +1,2577 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lampad | Music Finance Index</title>
+  <meta name="description"
+    content="Ranked view of music catalog assets across the market with integrated asset pricing engine and Monte Carlo simulations.">
+  <!-- Inline Favicon (Music Note) -->
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #020617;
+      /* Deep slate dark background */
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      color: #e5e7eb;
+    }
+
+    /* Ensure the app container looks good as a standalone page */
+    #lampad-index-app {
+      padding: 40px 20px;
+    }
+
+    @media (max-width: 640px) {
+      #lampad-index-app {
+        padding: 10px 5px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!--
+===========================================
+LAMPAD MUSIC FINANCE INDEX – EMBED SNIPPET (V5)
+Artist/Country/Genre filters + NPV range + Mult range + sortable headers
+NPV arrows: 50k step under 1m, 1m step at/above 1m
+===========================================
+-->
+
+
+
+
+  <style>
+    /* Root container */
+    #lampad-index-app {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      background: transparent;
+      color: #e5e7eb;
+    }
+
+
+
+
+    #lampad-index-app * {
+      box-sizing: border-box;
+    }
+
+
+
+
+    /* Main card */
+    #lampad-index-app .li-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      background: rgba(15, 23, 42, 0.85);
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      backdrop-filter: blur(10px);
+    }
+
+
+
+
+    /* Header */
+    #lampad-index-app h3 {
+      margin: 0;
+      font-size: 0.9rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #38bdf8;
+    }
+
+
+
+
+    #lampad-index-app h1 {
+      font-size: 1.7rem;
+      margin: 4px 0 6px;
+      color: #f9fafb;
+      line-height: 1.25;
+    }
+
+
+
+
+    #lampad-index-app .li-subtitle {
+      font-size: 0.9rem;
+      color: #9ca3af;
+      margin-bottom: 18px;
+    }
+
+
+
+
+    #lampad-index-app .li-status {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-bottom: 16px;
+    }
+
+
+
+
+    #lampad-index-app .li-status span {
+      color: #38bdf8;
+    }
+
+
+
+
+    /* Controls row */
+    #lampad-index-app .li-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end;
+      margin-bottom: 14px;
+    }
+
+
+
+
+    #lampad-index-app .li-field {
+      flex: 1 1 220px;
+      min-width: 0;
+    }
+
+
+
+
+    /* NPV & Mult rows – full width, appear below text filters */
+    #lampad-index-app .li-field-npv,
+    #lampad-index-app .li-field-mult {
+      flex: 1 1 100%;
+      min-width: 0;
+      margin-top: 4px;
+    }
+
+
+
+
+    #lampad-index-app label {
+      display: block;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+      color: #9ca3af;
+    }
+
+
+
+
+    #lampad-index-app input[type="text"],
+    #lampad-index-app input[type="number"] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      outline: none;
+      font-size: 0.9rem;
+    }
+
+
+
+
+    #lampad-index-app input[type="text"]::placeholder,
+    #lampad-index-app input[type="number"]::placeholder {
+      color: #6b7280;
+    }
+
+
+
+
+    #lampad-index-app input[type="text"]:focus,
+    #lampad-index-app input[type="number"]:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4);
+    }
+
+
+
+
+    /* Range layouts */
+    #lampad-index-app .li-npv-range,
+    #lampad-index-app .li-mult-range {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 6px;
+      align-items: center;
+    }
+
+
+
+
+    #lampad-index-app .li-npv-range span,
+    #lampad-index-app .li-mult-range span {
+      font-size: 0.8rem;
+      color: #6b7280;
+      text-align: center;
+    }
+
+
+
+
+    #lampad-index-app .li-npv-hint,
+    #lampad-index-app .li-mult-hint {
+      margin-top: 2px;
+      font-size: 0.7rem;
+      color: #6b7280;
+    }
+
+
+
+
+    /* Pill: summary of sort/limit */
+    #lampad-index-app .li-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: #9ca3af;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+
+
+
+    #lampad-index-app .li-pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+
+
+
+    /* ===================== */
+    /* DESKTOP TABLE VIEW    */
+    /* ===================== */
+
+
+
+
+    #lampad-index-app .li-table-wrap {
+      margin-top: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.9);
+      max-height: 520px;
+      overflow: auto;
+    }
+
+
+
+
+    #lampad-index-app table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+
+
+
+    #lampad-index-app th,
+    #lampad-index-app td {
+      padding: 6px 8px;
+      text-align: right;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+      white-space: nowrap;
+    }
+
+
+
+
+    #lampad-index-app th {
+      position: sticky;
+      top: 0;
+      background: rgba(15, 23, 42, 1);
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.7rem;
+      z-index: 1;
+    }
+
+
+
+
+    /* Sortable headers */
+    #lampad-index-app th.li-sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+
+
+
+
+    #lampad-index-app .li-sort-indicator {
+      margin-left: 4px;
+      font-size: 0.6rem;
+      opacity: 0.6;
+    }
+
+
+
+
+    #lampad-index-app th.li-col-artist,
+    #lampad-index-app td.li-col-artist {
+      text-align: left;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+
+
+
+    #lampad-index-app th.li-col-country,
+    #lampad-index-app td.li-col-country {
+      text-align: left;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+
+
+
+    #lampad-index-app th.li-col-genre,
+    #lampad-index-app td.li-col-genre {
+      text-align: left;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+
+
+
+    #lampad-index-app tbody tr:nth-child(even) {
+      background: rgba(15, 23, 42, 0.7);
+    }
+
+
+
+
+    #lampad-index-app tbody tr:hover {
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+
+
+
+    /* ===================== */
+    /* MOBILE CARD VIEW      */
+    /* ===================== */
+
+
+
+
+    #lampad-index-app .li-card-list {
+      display: none;
+      /* hidden on desktop, shown on mobile via media query */
+      margin-top: 10px;
+      max-height: 520px;
+      overflow: auto;
+    }
+
+
+
+
+    #lampad-index-app .li-card {
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), rgba(15, 23, 42, 0.96));
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      margin-bottom: 8px;
+    }
+
+
+
+
+    #lampad-index-app .li-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+
+
+
+    #lampad-index-app .li-rank {
+      font-size: 0.75rem;
+      color: #a5b4fc;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(129, 140, 248, 0.6);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+
+
+
+    #lampad-index-app .li-card-artist {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #f9fafb;
+    }
+
+
+
+
+    #lampad-index-app .li-card-meta {
+      font-size: 0.78rem;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+
+
+
+    #lampad-index-app .li-card-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+
+
+
+    #lampad-index-app .li-metric {
+      font-size: 0.75rem;
+    }
+
+
+
+
+    #lampad-index-app .li-metric-label {
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b7280;
+      margin-bottom: 1px;
+    }
+
+
+
+
+    #lampad-index-app .li-metric-value {
+      color: #e5e7eb;
+    }
+
+
+
+
+    /* RESPONSIVE BEHAVIOR */
+
+
+
+
+    /* On small screens: hide table, show cards */
+    @media (max-width: 800px) {
+      #lampad-index-app .li-table-wrap {
+        display: none;
+      }
+
+
+      #lampad-index-app .li-card-list {
+        display: block;
+      }
+    }
+
+
+
+
+    /* On very small screens, collapse metric grid to 2 columns */
+    @media (max-width: 480px) {
+      #lampad-index-app .li-card-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+
+    /* MODAL OVERLAY STYLES */
+    #lampad-valuation-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      overflow-y: auto;
+      padding: 20px 15px;
+      /* Reduced for mobile */
+      box-sizing: border-box;
+    }
+
+
+    #lampad-valuation-overlay *,
+    #lampad-valuation-overlay *::before,
+    #lampad-valuation-overlay *::after {
+      box-sizing: border-box;
+    }
+
+
+    #lampad-valuation-overlay.active {
+      display: block;
+    }
+
+
+    #lampad-valuation-overlay .modal-content {
+      position: relative;
+      max-width: 1100px;
+      margin: 0 auto;
+      background: #0f172a;
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+
+    #lampad-valuation-overlay .close-btn {
+      position: fixed;
+      /* Keep it visible while scrolling */
+      top: 20px;
+      right: 30px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 24px;
+      line-height: 1;
+      z-index: 10001;
+      /* Higher than modal content */
+      transition: background 0.2s, transform 0.2s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+
+
+    #lampad-valuation-overlay .close-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+    }
+
+
+    /* Adjust modal content padding for fixed button */
+    @media (max-width: 640px) {
+      #lampad-valuation-overlay {
+        padding: 10px;
+      }
+
+
+      #lampad-valuation-overlay .close-btn {
+        top: 10px;
+        right: 10px;
+        width: 32px;
+        height: 32px;
+        font-size: 20px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+    }
+
+
+    /* CSV Export Button Styles */
+    #lampad-index-app .li-export-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 10px;
+      color: #38bdf8;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+      margin-bottom: 4px;
+    }
+
+
+    #lampad-index-app .li-export-btn:hover {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+      transform: translateY(-1px);
+    }
+
+
+    #lampad-index-app .li-export-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+
+    /* INTEGRATED PRICING SIM STYLES */
+    #pricing-sim-app {
+      font-family: inherit;
+      background: transparent;
+      color: #e5e7eb;
+      padding: 0;
+      /* Container padding handled by modal-content */
+    }
+
+
+    #pricing-sim-app * {
+      box-sizing: border-box;
+    }
+
+
+    #pricing-sim-app .ps-container {
+      width: 100%;
+      padding: 24px;
+      background: transparent;
+      border: none;
+      backdrop-filter: none;
+    }
+
+
+    #pricing-sim-app header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 8px;
+      padding-right: 44px;
+      /* Space for close button */
+    }
+
+
+    #pricing-sim-app .ps-header-text {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+
+    #pricing-sim-app .ps-logo {
+      flex: 0 0 auto;
+      max-height: 80px;
+      width: auto;
+      object-fit: contain;
+      margin-left: 12px;
+    }
+
+
+    @media (max-width: 640px) {
+      #pricing-sim-app header {
+        flex-direction: row;
+        align-items: flex-start;
+      }
+
+
+      #pricing-sim-app .ps-logo {
+        max-height: 44px;
+      }
+    }
+
+
+    #pricing-sim-app h3 {
+      margin: 0;
+      font-size: 0.8rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #38bdf8;
+    }
+
+
+    #pricing-sim-app h4 {
+      font-size: 1.4rem;
+      margin: 2px 0 4px;
+      color: #f9fafb;
+      line-height: 1.2;
+    }
+
+
+    #pricing-sim-app .ps-subtitle {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-bottom: 12px;
+    }
+
+
+    #pricing-sim-app .ps-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+
+    #pricing-sim-app .ps-field {
+      flex: 1 1 200px;
+      min-width: 0;
+    }
+
+
+    #pricing-sim-app label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+      color: #9ca3af;
+    }
+
+
+    #pricing-sim-app input[type="text"],
+    #pricing-sim-app input[type="number"] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      outline: none;
+      font-size: 0.9rem;
+    }
+
+
+    #pricing-sim-app .ps-search-wrapper {
+      position: relative;
+    }
+
+
+    #pricing-sim-app .ps-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 4px;
+      max-height: 220px;
+      overflow-y: auto;
+      background: #020617;
+      border-radius: 10px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      z-index: 9999;
+      display: none;
+    }
+
+
+    #pricing-sim-app .ps-dropdown.ps-open {
+      display: block;
+    }
+
+
+    #pricing-sim-app .ps-dropdown-item {
+      padding: 7px 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+
+    #pricing-sim-app .ps-dropdown-item:hover {
+      background: rgba(56, 189, 248, 0.15);
+    }
+
+
+    #pricing-sim-app .ps-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+
+    @media (max-width: 900px) {
+      #pricing-sim-app .ps-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+
+    @media (max-width: 640px) {
+      #pricing-sim-app .ps-summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+
+    #pricing-sim-app .ps-card {
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.2), rgba(15, 23, 42, 0.9));
+      border: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+
+    #pricing-sim-app .ps-card-muted {
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+
+    #pricing-sim-app .ps-card-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+
+    #pricing-sim-app .ps-card-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #f9fafb;
+    }
+
+
+    #pricing-sim-app .ps-card-sub {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+
+    #pricing-sim-app .ps-chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 0.7rem;
+      background: rgba(15, 118, 110, 0.22);
+      border: 1px solid rgba(45, 212, 191, 0.4);
+      color: #a7f3d0;
+    }
+
+
+    #pricing-sim-app .ps-risk-expl {
+      margin-top: 4px;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      line-height: 1.4;
+    }
+
+
+    #pricing-sim-app .ps-chart-wrap {
+      margin-bottom: 20px;
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 16px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      padding: 12px;
+      height: 300px;
+      overflow: hidden;
+    }
+
+
+    #pricing-sim-app .ps-chart-title {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+
+    #pricing-sim-app .ps-chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      font-size: 0.7rem;
+      color: #e5e7eb;
+      margin-bottom: 8px;
+    }
+
+
+    #pricing-sim-app .ps-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+
+    #pricing-sim-app .ps-legend-swatch {
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+    }
+
+
+    #pricing-sim-app .ps-legend-p5 .ps-legend-swatch {
+      background: rgba(248, 113, 113, 1);
+    }
+
+
+    #pricing-sim-app .ps-legend-mean .ps-legend-swatch {
+      background: rgba(56, 189, 248, 1);
+    }
+
+
+    #pricing-sim-app .ps-legend-p95 .ps-legend-swatch {
+      background: rgba(96, 165, 250, 1);
+    }
+
+
+    #pricing-sim-app .ps-table-wrap {
+      border-radius: 14px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.9);
+      overflow: auto;
+      max-height: 300px;
+    }
+
+
+    #pricing-sim-app table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+    }
+
+
+    #pricing-sim-app th,
+    #pricing-sim-app td {
+      padding: 6px 8px;
+      text-align: right;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+    }
+
+
+    #pricing-sim-app th {
+      position: sticky;
+      top: 0;
+      background: rgba(15, 23, 42, 1);
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.65rem;
+      z-index: 1;
+    }
+
+
+    #pricing-sim-app td:first-child,
+    #pricing-sim-app th:first-child {
+      text-align: left;
+    }
+
+
+    #pricing-sim-app tbody tr:nth-child(even) {
+      background: rgba(15, 23, 42, 0.7);
+    }
+
+
+    #pricing-sim-app .ps-status {
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+
+    #pricing-sim-app .ps-status span {
+      color: #38bdf8;
+    }
+
+
+    /* Make row clickable */
+    #lampad-index-app tbody tr {
+      cursor: pointer;
+    }
+  </style>
+
+
+
+
+  <div id="lampad-index-app">
+    <div class="li-container">
+      <!-- HEADER -->
+      <header>
+        <h3>Lampad</h3>
+        <h1>Music Finance Index</h1>
+        <div class="li-subtitle">
+          Ranked view of catalog assets across the market. Default view shows the top <strong>1000</strong> artists by
+          risk-adjusted multiple.
+        </div>
+        <div class="li-status" id="li-status">Loading index data…</div>
+      </header>
+
+
+
+
+      <!-- CONTROLS -->
+      <section class="li-controls">
+        <div class="li-field">
+          <label for="li-artist-input">Filter by Artist</label>
+          <input type="text" id="li-artist-input" placeholder="e.g. The Police, REM, Julio Iglesias…"
+            autocomplete="off">
+        </div>
+
+
+
+
+        <div class="li-field">
+          <label for="li-country-input">Filter by Country</label>
+          <input type="text" id="li-country-input" placeholder="e.g. United States, United Kingdom, Brazil…"
+            autocomplete="off">
+        </div>
+
+
+
+
+        <div class="li-field">
+          <label for="li-genre-input">Filter by Genre</label>
+          <input type="text" id="li-genre-input" placeholder="e.g. Rock, Pop, Reggaeton…" autocomplete="off">
+        </div>
+
+
+
+
+        <div class="li-field li-field-npv">
+          <label>NPV Range (USD)</label>
+          <div class="li-npv-range">
+            <input type="number" id="li-npv-min" placeholder="Min">
+            <span>to</span>
+            <input type="number" id="li-npv-max" placeholder="Max">
+          </div>
+          <div class="li-npv-hint">
+            Optional. Leave blank for no bound. Uses raw NPV dollars (not k/m shorthand).
+          </div>
+        </div>
+
+
+
+
+        <div class="li-field li-field-mult">
+          <label>Mult Range</label>
+          <div class="li-mult-range">
+            <input type="number" id="li-mult-min" placeholder="Min" step="0.01" inputmode="decimal">
+            <span>to</span>
+            <input type="number" id="li-mult-max" placeholder="Max" step="0.01" inputmode="decimal">
+          </div>
+          <div class="li-mult-hint">
+            Optional. Leave blank for no bound. Multiples are unitless (e.g. 8.5, 12.0).
+          </div>
+        </div>
+
+
+
+
+        <div>
+          <div class="li-pill">
+            <span class="li-pill-dot"></span>
+            <span id="li-pill-text">Sorted by Mult (desc), showing top 1000</span>
+          </div>
+        </div>
+      </section>
+
+
+
+
+      <!-- EXPORT OPTIONS -->
+      <div style="display: flex; justify-content: flex-end; padding: 0 4px;">
+        <button id="li-export-csv" class="li-export-btn">
+          <svg viewBox="0 0 24 24">
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+          </svg>
+          Export to CSV
+        </button>
+      </div>
+
+
+
+
+      <!-- DESKTOP TABLE VIEW -->
+      <section class="li-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="li-col-artist li-sortable" data-sort-key="artist">
+                Artist
+                <span class="li-sort-indicator" data-sort-indicator="artist"></span>
+              </th>
+              <th class="li-col-country li-sortable" data-sort-key="country">
+                Country
+                <span class="li-sort-indicator" data-sort-indicator="country"></span>
+              </th>
+              <th class="li-col-genre li-sortable" data-sort-key="genre">
+                Genre
+                <span class="li-sort-indicator" data-sort-indicator="genre"></span>
+              </th>
+              <th class="li-sortable" data-sort-key="mu">
+                Mu
+                <span class="li-sort-indicator" data-sort-indicator="mu"></span>
+              </th>
+              <th class="li-sortable" data-sort-key="sigma">
+                Sigma
+                <span class="li-sort-indicator" data-sort-indicator="sigma"></span>
+              </th>
+              <th class="li-sortable" data-sort-key="muSigma">
+                Mu / Sigma
+                <span class="li-sort-indicator" data-sort-indicator="muSigma"></span>
+              </th>
+              <th class="li-sortable" data-sort-key="mult">
+                Mult
+                <span class="li-sort-indicator" data-sort-indicator="mult"></span>
+              </th>
+              <th class="li-sortable" data-sort-key="npv">
+                NPV
+                <span class="li-sort-indicator" data-sort-indicator="npv"></span>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="li-table-body"></tbody>
+        </table>
+      </section>
+
+
+
+
+      <!-- MOBILE CARD VIEW -->
+      <section class="li-card-list" id="li-card-list">
+        <!-- Cards injected via JS -->
+      </section>
+    </div>
+  </div>
+
+
+
+
+  <!-- VALUATION OVERLAY -->
+  <div id="lampad-valuation-overlay">
+    <button class="close-btn" id="close-valuation">&times;</button>
+    <div class="modal-content">
+
+
+      <div id="pricing-sim-app">
+        <div class="ps-container">
+          <!-- HEADER -->
+          <header>
+            <div class="ps-header-text">
+              <h3>Lampad</h3>
+              <h4>Music Finance Index &<br>Asset Pricing Engine</h4>
+              <div class="ps-subtitle">
+                Monte Carlo simulation and valuation of artist cash flows using observed metrics and comparing vs market
+                benchmarks.
+              </div>
+              <div class="ps-status" id="ps-status">Loading model data…</div>
+            </div>
+            <img class="ps-logo"
+              src="https://images.squarespace-cdn.com/content/v1/5921a9a0893fc0059b3b17ce/fd66496e-95af-4f05-8a53-34579309493c/lampad_wordmark.png?format=2500w"
+              alt="Lampad logo" />
+          </header>
+
+
+          <!-- CONTROLS -->
+          <section class="ps-controls">
+            <div class="ps-field">
+              <label for="ps-artist-input">Artist</label>
+              <div class="ps-search-wrapper">
+                <input type="text" id="ps-artist-input" placeholder="Type to search artist…" autocomplete="off">
+                <div id="ps-artist-dropdown" class="ps-dropdown"></div>
+              </div>
+            </div>
+
+
+            <div class="ps-field">
+              <label for="ps-discount-input">Discount rate (%)</label>
+              <input type="number" id="ps-discount-input" min="0" max="50" step="0.1" value="10">
+            </div>
+          </section>
+
+
+          <!-- SUMMARY GRID -->
+          <section class="ps-summary">
+            <div class="ps-summary-grid">
+              <div class="ps-card">
+                <div class="ps-card-label">Artist</div>
+                <div class="ps-card-value" id="ps-artist-name">–</div>
+                <div class="ps-card-sub" id="ps-artist-meta">Select an artist to run the simulation.</div>
+              </div>
+
+
+              <div class="ps-card ps-card-muted">
+                <div class="ps-card-label">Mu / Sigma</div>
+                <div class="ps-card-value" id="ps-mu-sigma">–</div>
+                <div class="ps-card-sub" id="ps-mu-sigma-sub">–</div>
+              </div>
+
+
+              <div class="ps-card ps-card-muted">
+                <div class="ps-card-label">Base NPV & CF₀</div>
+                <div class="ps-card-value" id="ps-npv-cf0">–</div>
+                <div class="ps-card-sub" id="ps-npv-cf0-sub">–</div>
+              </div>
+
+
+              <div class="ps-card ps-card-muted">
+                <div class="ps-card-label">Simulated NPV (User Rate)</div>
+                <div class="ps-card-value" id="ps-npv-user">–</div>
+                <div class="ps-card-sub" id="ps-npv-user-sub">P5 / Mean / P95</div>
+              </div>
+
+
+              <div class="ps-card ps-card-muted">
+                <div class="ps-card-label">Implied Discount Rates</div>
+                <div class="ps-card-value" id="ps-implied-rates">–</div>
+                <div class="ps-card-sub" id="ps-implied-rates-sub">Rate that matches base NPV.</div>
+              </div>
+
+
+              <div class="ps-card ps-card-muted">
+                <div class="ps-card-label">Market Rating</div>
+                <div class="ps-card-value">
+                  <span class="ps-chip" id="ps-risk-score">–</span>
+                </div>
+                <div class="ps-risk-expl" id="ps-risk-expl">–</div>
+              </div>
+            </div>
+          </section>
+
+
+          <!-- MAIN CHART -->
+          <section class="ps-chart-wrap">
+            <div class="ps-chart-title">Simulated Monthly Cash Flow</div>
+            <div class="ps-chart-legend">
+              <span class="ps-legend-item ps-legend-p5">
+                <span class="ps-legend-swatch"></span>
+                <span>P5 CF</span>
+              </span>
+              <span class="ps-legend-item ps-legend-mean">
+                <span class="ps-legend-swatch"></span>
+                <span>Mean CF</span>
+              </span>
+              <span class="ps-legend-item ps-legend-p95">
+                <span class="ps-legend-swatch"></span>
+                <span>P95 CF</span>
+              </span>
+            </div>
+            <canvas id="ps-cf-chart"></canvas>
+          </section>
+
+
+          <!-- ANNUAL TABLE -->
+          <section>
+            <div class="ps-chart-title">Annual CF Forecast</div>
+            <div class="ps-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Year</th>
+                    <th>P5 CF</th>
+                    <th>Mean CF</th>
+                    <th>P95 CF</th>
+                  </tr>
+                </thead>
+                <tbody id="ps-month-table-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+
+
+
+  <script>
+    (function () {
+      const CSV_URL =
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQn3QMkLXrOtH76c4ZtlUBfXDYLhIELYr_yehZoZ8OtsRdMGPYU5bIw5f7B358Z99jQIpWIdMI05tdM/pub?gid=2141684423&single=true&output=csv";
+
+
+
+
+      const MAX_DEFAULT_ROWS = 1000;
+
+
+
+
+      const statusEl = document.getElementById("li-status");
+      const pillTextEl = document.getElementById("li-pill-text");
+      const tableBodyEl = document.getElementById("li-table-body");
+      const cardListEl = document.getElementById("li-card-list");
+
+
+
+
+      const artistInput = document.getElementById("li-artist-input");
+      const countryInput = document.getElementById("li-country-input");
+      const genreInput = document.getElementById("li-genre-input");
+      const npvMinInput = document.getElementById("li-npv-min");
+      const npvMaxInput = document.getElementById("li-npv-max");
+      const multMinInput = document.getElementById("li-mult-min");
+      const multMaxInput = document.getElementById("li-mult-max");
+
+
+
+
+      const headerCells = document.querySelectorAll(
+        '#lampad-index-app th[data-sort-key]'
+      );
+      const sortIndicators = document.querySelectorAll(
+        '#lampad-index-app .li-sort-indicator'
+      );
+
+
+
+
+      let allArtists = [];
+      let currentView = [];
+
+
+
+
+      let sortState = { key: "mult", dir: "desc" };
+
+
+
+
+      /* ---------- CSV parsing ---------- */
+
+
+
+
+      function parseCsv(text) {
+        const rows = [];
+        let row = [];
+        let cur = "";
+        let inQuotes = false;
+
+
+
+
+        for (let i = 0; i < text.length; i++) {
+          const ch = text[i];
+          if (inQuotes) {
+            if (ch === '"') {
+              if (text[i + 1] === '"') { cur += '"'; i++; }
+              else { inQuotes = false; }
+            } else {
+              cur += ch;
+            }
+          } else {
+            if (ch === '"') inQuotes = true;
+            else if (ch === ",") { row.push(cur); cur = ""; }
+            else if (ch === "\r") { /* ignore */ }
+            else if (ch === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; }
+            else cur += ch;
+          }
+        }
+        if (cur.length > 0 || row.length > 0) {
+          row.push(cur);
+          rows.push(row);
+        }
+        return rows;
+      }
+
+
+
+
+      function parseNumberCell(str) {
+        if (str == null) return NaN;
+        str = String(str).trim();
+        if (!str) return NaN;
+        if (str.indexOf("%") !== -1) {
+          return parseFloat(str.replace("%", "")) / 100;
+        }
+        return parseFloat(str);
+      }
+
+
+
+
+      /* ---------- VALUATION ELEMENTS & STATE ---------- */
+
+
+      const valOverlay = document.getElementById("lampad-valuation-overlay");
+      const closeValBtn = document.getElementById("close-valuation");
+
+
+      const psStatusEl = document.getElementById("ps-status");
+      const psArtistInput = document.getElementById("ps-artist-input");
+      const psArtistDropdown = document.getElementById("ps-artist-dropdown");
+      const psDiscountInput = document.getElementById("ps-discount-input");
+
+
+      const psArtistNameEl = document.getElementById("ps-artist-name");
+      const psArtistMetaEl = document.getElementById("ps-artist-meta");
+      const psMuSigmaEl = document.getElementById("ps-mu-sigma");
+      const psMuSigmaSubEl = document.getElementById("ps-mu-sigma-sub");
+
+
+      let filteredArtistsForExport = []; // To keep track of filtered set before slicing
+      const psNpvCf0El = document.getElementById("ps-npv-cf0");
+      const psNpvCf0SubEl = document.getElementById("ps-npv-cf0-sub");
+      const psNpvUserEl = document.getElementById("ps-npv-user");
+      const psNpvUserSubEl = document.getElementById("ps-npv-user-sub");
+      const psImpliedRatesEl = document.getElementById("ps-implied-rates");
+      const psImpliedRatesSubEl = document.getElementById("ps-implied-rates-sub");
+      const psRiskScoreEl = document.getElementById("ps-risk-score");
+      const psRiskExplEl = document.getElementById("ps-risk-expl");
+      const psMonthTableBody = document.getElementById("ps-month-table-body");
+
+
+      const psChartCanvas = document.getElementById("ps-cf-chart");
+      let psCfChart = null;
+
+
+      let psAssumptions = {};
+      const ASSUMPTIONS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQn3QMkLXrOtH76c4ZtlUBfXDYLhIELYr_yehZoZ8OtsRdMGPYU5bIw5f7B358Z99jQIpWIdMI05tdM/pub?gid=1604794205&single=true&output=csv";
+
+
+      const MONTHS = 120;
+      const N_SIMS = 500;
+
+
+
+
+      /* ---------- Formatting helpers ---------- */
+
+
+
+
+      function formatMu(x) {
+        if (!isFinite(x)) return "–";
+        return x.toFixed(4);
+      }
+
+
+
+
+      function formatPercent(x) {
+        if (!isFinite(x)) return "–";
+        return (x * 100).toFixed(2) + "%";
+      }
+
+
+
+
+      function formatMult(x) {
+        if (!isFinite(x)) return "–";
+        return x.toFixed(2);
+      }
+
+
+
+
+      function formatNPV(x) {
+        if (!isFinite(x)) return "–";
+        const absX = Math.abs(x);
+        if (absX >= 1e12) {
+          return (x / 1e12).toFixed(1) + "t";
+        } else if (absX >= 1e9) {
+          return (x / 1e9).toFixed(1) + "b";
+        } else if (absX >= 1e6) {
+          return (x / 1e6).toFixed(1) + "m";
+        } else if (absX >= 1e3) {
+          return (x / 1e3).toFixed(1) + "k";
+        } else {
+          return x.toFixed(1);
+        }
+      }
+
+
+
+
+      /* ---------- Rendering ---------- */
+
+
+
+
+      function renderTableRows(rows) {
+        const html = rows.map(a => {
+          return `
+       <tr>
+         <td class="li-col-artist">${a.artist || ""}</td>
+         <td class="li-col-country">${a.country || ""}</td>
+         <td class="li-col-genre">${a.genre || ""}</td>
+         <td>${formatMu(a.mu)}</td>
+         <td>${formatPercent(a.sigma)}</td>
+         <td>${formatPercent(a.muSigma)}</td>
+         <td>${formatMult(a.mult)}</td>
+         <td>${formatNPV(a.npv)}</td>
+       </tr>
+     `;
+        }).join("");
+        tableBodyEl.innerHTML = html;
+
+
+        // Add click listeners to rows
+        tableBodyEl.querySelectorAll('tr').forEach((tr, idx) => {
+          tr.addEventListener('click', () => {
+            openValuation(rows[idx]);
+          });
+        });
+      }
+
+
+
+
+      function renderCardList(rows) {
+        const html = rows.map((a, idx) => {
+          const metaBits = [];
+          if (a.country) metaBits.push(a.country);
+          if (a.genre) metaBits.push(a.genre);
+          const meta = metaBits.join(" · ");
+
+
+
+
+          return `
+       <div class="li-card" data-idx="${idx}">
+         <div class="li-card-header">
+           <div class="li-rank">#${idx + 1}</div>
+           <div>
+             <div class="li-card-artist">${a.artist || ""}</div>
+             <div class="li-card-meta">${meta || ""}</div>
+           </div>
+         </div>
+         <div class="li-card-metrics">
+           <div class="li-metric">
+             <div class="li-metric-label">Mult</div>
+             <div class="li-metric-value">${formatMult(a.mult)}x</div>
+           </div>
+           <div class="li-metric">
+             <div class="li-metric-label">NPV</div>
+             <div class="li-metric-value">${formatNPV(a.npv)}</div>
+           </div>
+           <div class="li-metric">
+             <div class="li-metric-label">Mu</div>
+             <div class="li-metric-value">${formatMu(a.mu)}</div>
+           </div>
+           <div class="li-metric">
+             <div class="li-metric-label">Sigma</div>
+             <div class="li-metric-value">${formatPercent(a.sigma)}</div>
+           </div>
+           <div class="li-metric">
+             <div class="li-metric-label">Mu / Sigma</div>
+             <div class="li-metric-value">${formatPercent(a.muSigma)}</div>
+           </div>
+         </div>
+       </div>
+     `;
+        }).join("");
+        cardListEl.innerHTML = html;
+
+
+        // Add click listeners to cards
+        cardListEl.querySelectorAll('.li-card').forEach(card => {
+          card.addEventListener('click', () => {
+            const idx = parseInt(card.getAttribute('data-idx'));
+            openValuation(rows[idx]);
+          });
+        });
+      }
+
+
+
+
+      function renderViews(rows) {
+        currentView = rows;
+        renderTableRows(rows);
+        renderCardList(rows);
+      }
+
+
+
+
+      function sortLabel(key) {
+        switch (key) {
+          case "artist": return "Artist";
+          case "country": return "Country";
+          case "genre": return "Genre";
+          case "mu": return "Mu";
+          case "sigma": return "Sigma";
+          case "muSigma": return "Mu / Sigma";
+          case "mult": return "Mult";
+          case "npv": return "NPV";
+          default: return key;
+        }
+      }
+
+
+
+
+      function updateStatusAndPill(filteredCount, totalCount, isFiltered) {
+        const activeFilters = [];
+        if (artistInput.value.trim()) activeFilters.push("artist");
+        if (countryInput.value.trim()) activeFilters.push("country");
+        if (genreInput.value.trim()) activeFilters.push("genre");
+        if (npvMinInput.value.trim() || npvMaxInput.value.trim()) activeFilters.push("NPV");
+        if (multMinInput.value.trim() || multMaxInput.value.trim()) activeFilters.push("Mult");
+
+
+
+
+        const sortText = `Sorted by ${sortLabel(sortState.key)} (${sortState.dir})`;
+        const shown = Math.min(MAX_DEFAULT_ROWS, filteredCount || totalCount);
+
+
+
+
+        if (!isFiltered || activeFilters.length === 0) {
+          statusEl.innerHTML =
+            `Loaded <span>${totalCount}</span> artists. Showing the top <span>${shown}</span> by ${sortLabel(sortState.key)} (${sortState.dir}).`;
+          pillTextEl.textContent = `${sortText}, showing top ${MAX_DEFAULT_ROWS}`;
+        } else {
+          const filterLabel = activeFilters.join(" + ");
+          statusEl.innerHTML =
+            `Filtered by ${filterLabel}: showing <span>${filteredCount}</span> of <span>${totalCount}</span> artists (max ${MAX_DEFAULT_ROWS} displayed).`;
+          pillTextEl.textContent = `${sortText} · filtered by ${filterLabel}`;
+        }
+
+
+
+
+        sortIndicators.forEach(el => {
+          const key = el.getAttribute("data-sort-indicator");
+          if (key === sortState.key) {
+            el.textContent = sortState.dir === "asc" ? "▲" : "▼";
+          } else {
+            el.textContent = "";
+          }
+        });
+      }
+
+
+
+
+      /* ---------- Sorting ---------- */
+
+
+
+
+      function sortArray(arr, key, dir) {
+        const sorted = arr.slice().sort((a, b) => {
+          const va = a[key];
+          const vb = b[key];
+
+
+
+
+          if (typeof va === "string" || typeof vb === "string") {
+            const sa = (va || "").toString().toLowerCase();
+            const sb = (vb || "").toString().toLowerCase();
+            if (sa < sb) return -1;
+            if (sa > sb) return 1;
+            return 0;
+          }
+
+
+
+
+          if (va < vb) return -1;
+          if (va > vb) return 1;
+          return 0;
+        });
+
+
+
+
+        if (dir === "desc") sorted.reverse();
+        return sorted;
+      }
+
+
+
+
+      /* ---------- VALUATION SIMULATION LOGIC ---------- */
+
+
+      function simulatePaths(cf0Annual, mu, sigma) {
+        const cf0Month = cf0Annual / 12;
+        let b = 1 + mu;
+        let alphaLow = b - sigma;
+        let alphaHigh = b + sigma;
+        if (alphaLow < 0) alphaLow = 0;
+
+
+        const cfPaths = new Array(N_SIMS);
+        const totals = new Array(N_SIMS);
+
+
+        for (let s = 0; s < N_SIMS; s++) {
+          const path = new Array(MONTHS);
+          let cfPrev = cf0Month;
+          let total = 0;
+
+
+          for (let t = 0; t < MONTHS; t++) {
+            const r = alphaLow + Math.random() * (alphaHigh - alphaLow);
+            const cf = cfPrev * r;
+            path[t] = cf;
+            total += cf;
+            cfPrev = cf;
+          }
+
+
+          cfPaths[s] = path;
+          totals[s] = total;
+        }
+
+
+        return { cfPaths, totals, alphaLow, alphaHigh };
+      }
+
+
+      function percentile(sortedArr, p) {
+        if (!sortedArr.length) return NaN;
+        const n = sortedArr.length;
+        const idx = Math.floor(p * (n - 1));
+        return sortedArr[idx];
+      }
+
+
+      function npvOfSeries(cfArray, annualRate) {
+        let npvVal = 0;
+        for (let i = 0; i < cfArray.length; i++) {
+          const tYears = (i + 1) / 12;
+          npvVal += cfArray[i] / Math.pow(1 + annualRate, tYears);
+        }
+        return npvVal;
+      }
+
+
+      function impliedDiscountRate(targetNpv, cfArray, rLow, rHigh, iterations) {
+        let low = rLow, high = rHigh;
+        for (let it = 0; it < iterations; it++) {
+          const mid = (low + high) / 2;
+          const npvMid = npvOfSeries(cfArray, mid);
+          if (npvMid > targetNpv) low = mid; else high = mid;
+        }
+        return (low + high) / 2;
+      }
+
+
+      function scoreRelative(value, base, low, high, higherIsBetter) {
+        if (higherIsBetter) {
+          if (value > high) return 2;
+          if (value >= base && value <= high) return 1;
+          if (value >= low && value < base) return -1;
+          return -2;
+        } else {
+          if (value < low) return 2;
+          if (value >= low && value <= base) return 1;
+          if (value > base && value <= high) return -1;
+          return -2;
+        }
+      }
+
+
+      function describeMu(mu, base, low, high) {
+        if (mu > high) return "growth (mu) is above the market upper band, indicating stronger than typical market growth.";
+        if (mu >= base && mu <= high) return "growth (mu) is above the market average and within the upper band.";
+        if (mu >= low && mu < base) return "growth (mu) is within one standard deviation below the market average.";
+        return "growth (mu) is below the market lower band, indicating weaker than typical market growth.";
+      }
+
+
+      function describeSigma(sigma, base, low, high) {
+        if (sigma < low) return "volatility (sigma) is below the market lower band, suggesting unusually stable cash flows.";
+        if (sigma >= low && sigma <= base) return "volatility (sigma) is below the market average and within the lower band.";
+        if (sigma > base && sigma <= high) return "volatility (sigma) is above the market average but still within one standard deviation.";
+        return "volatility (sigma) is above the market upper band, indicating more risk than typical market assets.";
+      }
+
+
+      function formatCurrency(x) {
+        if (!isFinite(x)) return "–";
+        return "$" + x.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      }
+
+
+      function formatCompactCurrency(x) {
+        if (!isFinite(x)) return "–";
+        const absX = Math.abs(x);
+        if (absX >= 1_000_000) {
+          return "$" + (x / 1_000_000).toFixed(2) + "m";
+        } else if (absX >= 1_000) {
+          return "$" + (x / 1_000).toFixed(2) + "k";
+        } else {
+          return "$" + x.toFixed(2);
+        }
+      }
+
+
+      function formatPct(x) {
+        if (!isFinite(x)) return "–";
+        return (x * 100).toFixed(2) + "%";
+      }
+
+
+      function updateMonthTable(p5Array, meanArray, p95Array) {
+        const months = Math.min(p5Array.length, meanArray.length, p95Array.length);
+        const numYears = Math.floor(months / 12);
+        const rows = [];
+
+
+        for (let y = 0; y < numYears; y++) {
+          const start = y * 12;
+          const end = start + 12;
+
+
+          const yearP5 = p5Array.slice(start, end).reduce((a, b) => a + b, 0);
+          const yearMean = meanArray.slice(start, end).reduce((a, b) => a + b, 0);
+          const yearP95 = p95Array.slice(start, end).reduce((a, b) => a + b, 0);
+
+
+          rows.push(`
+       <tr>
+         <td>Year ${y + 1}</td>
+         <td>${formatCompactCurrency(yearP5)}</td>
+         <td>${formatCompactCurrency(yearMean)}</td>
+         <td>${formatCompactCurrency(yearP95)}</td>
+       </tr>
+     `);
+        }
+
+
+        psMonthTableBody.innerHTML = rows.join("");
+      }
+
+
+      function updateChart(monthP5, monthMean, monthP95) {
+        const labels = Array.from({ length: monthP5.length }, (_, i) => i + 1);
+        const allValues = [...monthP5, ...monthMean, ...monthP95].filter(v => Number.isFinite(v));
+
+
+        let yMin = 0, yMax = 1;
+        if (allValues.length > 0) {
+          const minVal = Math.min(...allValues);
+          const maxVal = Math.max(...allValues);
+          const span = maxVal - minVal || maxVal || 1;
+          const padding = span * 0.3;
+          yMin = minVal - padding;
+          yMax = maxVal + padding;
+        }
+
+
+        const data = {
+          labels,
+          datasets: [
+            { label: "P5 CF", data: monthP5, borderWidth: 1.5, tension: 0.25, borderColor: "rgba(248,113,113,1)", pointRadius: 0 },
+            { label: "Mean CF", data: monthMean, borderWidth: 1.8, tension: 0.25, borderColor: "rgba(56,189,248,1)", pointRadius: 0 },
+            { label: "P95 CF", data: monthP95, borderWidth: 1.5, tension: 0.25, borderColor: "rgba(96,165,250,1)", pointRadius: 0 }
+          ]
+        };
+
+
+        const options = {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: {
+            padding: { top: 4, right: 8, bottom: 32, left: 8 }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ctx.dataset.label + ": " + formatCompactCurrency(ctx.parsed.y)
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: "#9ca3af",
+                maxTicksLimit: 10,
+                padding: 4,
+                font: { size: 9 }
+              },
+              grid: { color: "rgba(31,41,55,0.6)" },
+              title: {
+                display: true,
+                text: "Month",
+                color: "#9ca3af",
+                font: { size: 10 }
+              }
+            },
+            y: {
+              min: yMin,
+              max: yMax,
+              ticks: {
+                color: "#9ca3af",
+                callback: v => formatCompactCurrency(v)
+              },
+              grid: { color: "rgba(31,41,55,0.6)" }
+            }
+          }
+        };
+
+
+        if (psCfChart) {
+          psCfChart.data = data;
+          psCfChart.options = options;
+          psCfChart.update();
+        } else {
+          psCfChart = new Chart(psChartCanvas.getContext("2d"), { type: "line", data, options });
+        }
+      }
+
+
+      function runSimulation(artistObj) {
+        if (!artistObj) return;
+
+
+        const discountRate = parseFloat(psDiscountInput.value) / 100 || 0.10;
+
+
+        const {
+          mktMu,
+          mktMuLow,
+          mktMuHigh,
+          mktSigma,
+          mktSigmaLow,
+          mktSigmaHigh,
+          benchmarkSource
+        } = psAssumptions;
+
+
+        const { artist, country, mu, sigma, mult, npv } = artistObj;
+        const cf0 = npv / mult;
+
+
+        psStatusEl.textContent = "Running simulation for " + artist + "…";
+
+
+        const { cfPaths, alphaLow, alphaHigh } = simulatePaths(cf0, mu, sigma);
+
+
+        const monthP5 = new Array(MONTHS);
+        const monthMean = new Array(MONTHS);
+        const monthP95 = new Array(MONTHS);
+
+
+        for (let t = 0; t < MONTHS; t++) {
+          const vals = cfPaths.map(path => path[t]).sort((a, b) => a - b);
+          monthP5[t] = percentile(vals, 0.05);
+          monthP95[t] = percentile(vals, 0.95);
+          monthMean[t] = vals.reduce((a, b) => a + b, 0) / vals.length;
+        }
+
+
+        const npvP5User = npvOfSeries(monthP5, discountRate);
+        const npvMeanUser = npvOfSeries(monthMean, discountRate);
+        const npvP95User = npvOfSeries(monthP95, discountRate);
+
+
+        const impliedRateP5 = impliedDiscountRate(npv, monthP5, 0, 0.30, 50);
+        const impliedRateMean = impliedDiscountRate(npv, monthMean, 0, 0.30, 50);
+        const impliedRateP95 = impliedDiscountRate(npv, monthP95, 0, 0.30, 50);
+
+
+        let riskScore = NaN;
+        let riskExplanation = "Market benchmarks not available; cannot score Mu/Sigma against market.";
+
+
+        const haveMarketBenchmarks =
+          [mktMu, mktMuLow, mktMuHigh, mktSigma, mktSigmaLow, mktSigmaHigh]
+            .every(v => Number.isFinite(v));
+
+
+        if (haveMarketBenchmarks) {
+          const baseScore = 3;
+          const muDelta = scoreRelative(mu, mktMu, mktMuLow, mktMuHigh, true);
+          const sigmaDelta = scoreRelative(sigma, mktSigma, mktSigmaLow, mktSigmaHigh, false);
+          riskScore = Math.max(1, Math.min(5, baseScore + muDelta + sigmaDelta));
+
+
+          const muText = describeMu(mu, mktMu, mktMuLow, mktMuHigh);
+          const sigmaText = describeSigma(sigma, mktSigma, mktSigmaLow, mktSigmaHigh);
+
+
+          riskExplanation =
+            "Relative to the 3-year market benchmark, " +
+            muText + " Additionally, " +
+            sigmaText + " Overall, this yields a risk-adjusted quality rating of " +
+            riskScore.toFixed(0) + " out of 5.";
+
+
+          if (benchmarkSource === "fallback") {
+            riskExplanation += " NOTE: Market metrics are based on static fallback assumptions because current benchmark data could not be fetched.";
+          }
+        }
+
+
+        psArtistNameEl.textContent = artist;
+        psArtistMetaEl.textContent = country || "";
+
+
+        psMuSigmaEl.textContent = `${mu.toFixed(6)} / ${sigma.toFixed(6)}`;
+        psMuSigmaSubEl.textContent = `Alpha band: [${alphaLow.toFixed(6)}, ${alphaHigh.toFixed(6)}]`;
+
+
+        psNpvCf0El.textContent = formatCurrency(npv);
+        psNpvCf0SubEl.textContent = `CF₀ ≈ ${formatCurrency(cf0)} (NPV / Mult = ${mult.toFixed(2)}x)`;
+
+
+        psNpvUserEl.textContent = formatCurrency(npvMeanUser);
+        psNpvUserSubEl.textContent =
+          `P5: ${formatCurrency(npvP5User)} | Mean: ${formatCurrency(npvMeanUser)} | P95: ${formatCurrency(npvP95User)}`;
+
+
+        psImpliedRatesEl.textContent = formatPct(impliedRateMean);
+        psImpliedRatesSubEl.textContent =
+          `P5: ${formatPct(impliedRateP5)} | Mean: ${formatPct(impliedRateMean)} | P95: ${formatPct(impliedRateP95)}`;
+
+
+        psRiskScoreEl.textContent = Number.isFinite(riskScore) ? `Score ${riskScore.toFixed(0)}/5` : "N/A";
+        psRiskExplEl.textContent = riskExplanation;
+
+
+        updateChart(monthP5, monthMean, monthP95);
+        updateMonthTable(monthP5, monthMean, monthP95);
+
+
+        psStatusEl.innerHTML = `Simulation complete for <span>${artist}</span> at discount rate ${formatPct(discountRate)}.`;
+      }
+
+
+      /* ---------- VALUATION UI CONTROLS ---------- */
+
+
+      function renderPsDropdown(filtered) {
+        if (!filtered.length) {
+          psArtistDropdown.innerHTML = "";
+          psArtistDropdown.classList.remove("ps-open");
+          return;
+        }
+
+
+        const items = filtered.slice(0, 20).map(a => {
+          const countryLabel = a.country ? `<span class="ps-artist-country">${a.country}</span>` : "";
+          return `<div class="ps-dropdown-item" data-artist="${encodeURIComponent(a.artist)}">
+               <span class="ps-artist-name">${a.artist}</span>${countryLabel}
+             </div>`;
+        });
+
+
+        psArtistDropdown.innerHTML = items.join("");
+        psArtistDropdown.classList.add("ps-open");
+      }
+
+
+      function handlePsArtistInput() {
+        const query = psArtistInput.value.trim().toLowerCase();
+        if (!query) {
+          psArtistDropdown.classList.remove("ps-open");
+          return;
+        }
+        const filtered = allArtists.filter(a => a.artist.toLowerCase().includes(query));
+        renderPsDropdown(filtered);
+      }
+
+
+      function openValuation(artistObj) {
+        if (!artistObj) return;
+        valOverlay.classList.add("active");
+        document.body.style.overflow = "hidden"; // Prevent background scroll
+        psArtistInput.value = artistObj.artist;
+        runSimulation(artistObj);
+      }
+
+
+      function closeValuation() {
+        valOverlay.classList.remove("active");
+        document.body.style.overflow = ""; // Restore background scroll
+      }
+
+
+      closeValBtn.addEventListener("click", closeValuation);
+
+
+      // Close on backdrop click
+      valOverlay.addEventListener("click", (e) => {
+        if (e.target === valOverlay) closeValuation();
+      });
+
+
+      psArtistInput.addEventListener("input", handlePsArtistInput);
+
+
+      psArtistDropdown.addEventListener("click", e => {
+        const item = e.target.closest(".ps-dropdown-item");
+        if (!item) return;
+        const artistName = decodeURIComponent(item.getAttribute("data-artist"));
+        const artistObj = allArtists.find(a => a.artist === artistName);
+        if (!artistObj) return;
+        psArtistInput.value = artistName;
+        psArtistDropdown.classList.remove("ps-open");
+        runSimulation(artistObj);
+      });
+
+
+      psArtistInput.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+          const query = psArtistInput.value.trim().toLowerCase();
+          if (!query) return;
+          const filtered = allArtists.filter(a => a.artist.toLowerCase().includes(query));
+          if (filtered.length === 1) {
+            psArtistInput.value = filtered[0].artist;
+            psArtistDropdown.classList.remove("ps-open");
+            runSimulation(filtered[0]);
+          }
+        }
+      });
+
+
+      psDiscountInput.addEventListener("change", () => {
+        const artistName = psArtistInput.value.trim();
+        if (!artistName) return;
+        const artistObj = allArtists.find(a => a.artist === artistName);
+        if (artistObj) runSimulation(artistObj);
+      });
+
+
+
+
+      /* ---------- Filtering ---------- */
+
+
+
+
+      function applyFilters() {
+        const artistQ = artistInput.value.trim().toLowerCase();
+        const countryQ = countryInput.value.trim().toLowerCase();
+        const genreQ = genreInput.value.trim().toLowerCase();
+
+
+
+
+        const npvMinVal = parseFloat(npvMinInput.value);
+        const npvMaxVal = parseFloat(npvMaxInput.value);
+        const hasNpvMin = !isNaN(npvMinVal);
+        const hasNpvMax = !isNaN(npvMaxVal);
+
+
+
+
+        const multMinVal = parseFloat(multMinInput.value);
+        const multMaxVal = parseFloat(multMaxInput.value);
+        const hasMultMin = !isNaN(multMinVal);
+        const hasMultMax = !isNaN(multMaxVal);
+
+
+
+
+        let filtered = allArtists;
+
+
+
+
+        if (artistQ) {
+          filtered = filtered.filter(a =>
+            (a.artist || "").toLowerCase().includes(artistQ)
+          );
+        }
+
+
+
+
+        if (countryQ) {
+          filtered = filtered.filter(a =>
+            (a.country || "").toLowerCase().includes(countryQ)
+          );
+        }
+
+
+
+
+        if (genreQ) {
+          filtered = filtered.filter(a =>
+            (a.genre || "").toLowerCase().includes(genreQ)
+          );
+        }
+
+
+
+
+        if (hasNpvMin) {
+          filtered = filtered.filter(a => a.npv >= npvMinVal);
+        }
+
+
+
+
+        if (hasNpvMax) {
+          filtered = filtered.filter(a => a.npv <= npvMaxVal);
+        }
+
+
+
+
+        if (hasMultMin) {
+          filtered = filtered.filter(a => a.mult >= multMinVal);
+        }
+
+
+
+
+        if (hasMultMax) {
+          filtered = filtered.filter(a => a.mult <= multMaxVal);
+        }
+
+
+
+
+        const totalCount = allArtists.length;
+        const filteredCount = filtered.length;
+
+
+
+
+        filtered = sortArray(filtered, sortState.key, sortState.dir);
+
+
+        filteredArtistsForExport = filtered; // Store for CSV export
+
+
+        const subset = filtered.slice(0, MAX_DEFAULT_ROWS);
+        renderViews(subset);
+
+
+
+
+        const isFiltered = !!(
+          artistQ ||
+          countryQ ||
+          genreQ ||
+          hasNpvMin ||
+          hasNpvMax ||
+          hasMultMin ||
+          hasMultMax
+        );
+        updateStatusAndPill(filteredCount, totalCount, isFiltered);
+      }
+
+
+
+
+      /* ---------- NPV step behavior (arrow keys) ---------- */
+
+
+
+
+      function handleNpvKeyDown(e) {
+        if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+
+
+
+
+        e.preventDefault();
+        const input = e.target;
+        let val = parseFloat(input.value);
+        if (isNaN(val)) val = 0;
+
+
+
+
+        const absVal = Math.abs(val);
+        const step = absVal < 1_000_000 ? 50_000 : 1_000_000;
+
+
+
+
+        if (e.key === "ArrowUp") {
+          val += step;
+        } else {
+          val -= step;
+        }
+
+
+
+
+        input.value = String(val);
+        applyFilters();
+      }
+
+
+
+
+      /* ---------- Data loading ---------- */
+
+
+
+
+      async function loadIndexData() {
+        try {
+          statusEl.textContent = "Loading index data…";
+
+
+
+
+          const resp = await fetch(CSV_URL);
+          const text = await resp.text();
+          const rows = parseCsv(text).filter(r => r.length && r.some(c => (c || "").trim() !== ""));
+
+
+
+
+          if (!rows.length) {
+            statusEl.textContent = "No index data found.";
+            return;
+          }
+
+
+
+
+          const header = rows[0];
+          const idxArtist = header.indexOf("Artist");
+          const idxCountry = header.indexOf("Country");
+          const idxGenre = header.indexOf("Genre");
+          const idxMu = header.indexOf("Mu");
+          const idxSigma = header.indexOf("Sigma");
+          const idxMuSigma = header.indexOf("Mu_Sigma");
+          const idxMult = header.indexOf("Mult");
+          const idxNPV = header.indexOf("NPV");
+
+
+
+
+          allArtists = rows.slice(1).map(r => {
+            const artist = r[idxArtist] || "";
+            const country = r[idxCountry] || "";
+            const genre = r[idxGenre] || "";
+            const mu = parseNumberCell(r[idxMu]);
+            const sigma = parseNumberCell(r[idxSigma]);
+            let muSigma = parseNumberCell(r[idxMuSigma]);
+            const mult = parseNumberCell(r[idxMult]);
+            const npv = parseNumberCell(r[idxNPV]);
+
+
+
+
+            if (!isFinite(muSigma) && isFinite(mu) && isFinite(sigma) && sigma !== 0) {
+              muSigma = mu / sigma;
+            }
+
+
+
+
+            return { artist, country, genre, mu, sigma, muSigma, mult, npv };
+          }).filter(a =>
+            a.artist &&
+            Number.isFinite(a.mu) &&
+            Number.isFinite(a.sigma) &&
+            Number.isFinite(a.mult) &&
+            Number.isFinite(a.npv)
+          );
+
+
+
+
+          sortState = { key: "mult", dir: "desc" };
+          applyFilters();
+
+
+          // After index data is loaded, fetch valuation assumptions
+          await loadValuationAssumptions();
+        } catch (err) {
+          console.error(err);
+          statusEl.textContent = "Error loading index data. Please refresh or check console.";
+        }
+      }
+
+
+      async function loadValuationAssumptions() {
+        try {
+          psStatusEl.textContent = "Loading model data…";
+          const resp = await fetch(ASSUMPTIONS_CSV_URL);
+          const text = await resp.text();
+          const aRows = parseCsv(text).filter(
+            r => r.length && r.some(c => (c || "").trim() !== "")
+          );
+
+
+          let riskFreeRate = NaN,
+            mktMu = NaN, mktMuLow = NaN, mktMuHigh = NaN,
+            mktSigma = NaN, mktSigmaLow = NaN, mktSigmaHigh = NaN;
+
+
+          for (const row of aRows) {
+            const dim = (row[0] || "").trim();
+            if (dim === "Risk Free Rate") riskFreeRate = parseNumberCell(row[1]);
+            if (dim === "WeeklyMu_3Y") {
+              mktMu = parseNumberCell(row[1]);
+              mktMuLow = parseNumberCell(row[2]);
+              mktMuHigh = parseNumberCell(row[3]);
+            }
+            if (dim === "WeeklySigma_3Y") {
+              mktSigma = parseNumberCell(row[1]);
+              mktSigmaLow = parseNumberCell(row[2]);
+              mktSigmaHigh = parseNumberCell(row[3]);
+            }
+          }
+
+
+          const benchmarksValid = [mktMu, mktMuLow, mktMuHigh, mktSigma, mktSigmaLow, mktSigmaHigh].every(v => Number.isFinite(v));
+          let benchmarkSource = "csv";
+
+
+          if (!benchmarksValid) {
+            benchmarkSource = "fallback";
+            if (!Number.isFinite(mktMu)) mktMu = -0.0012;
+            if (!Number.isFinite(mktMuLow)) mktMuLow = -0.0056;
+            if (!Number.isFinite(mktMuHigh)) mktMuHigh = 0.0031;
+            if (!Number.isFinite(mktSigma)) mktSigma = 0.061;
+            if (!Number.isFinite(mktSigmaLow)) mktSigmaLow = 0.03;
+            if (!Number.isFinite(mktSigmaHigh)) mktSigmaHigh = 0.093;
+          }
+
+
+          psAssumptions = { riskFreeRate, mktMu, mktMuLow, mktMuHigh, mktSigma, mktSigmaLow, mktSigmaHigh, benchmarkSource };
+          psStatusEl.textContent = "Model data loaded.";
+        } catch (err) {
+          console.error(err);
+          psStatusEl.textContent = "Error loading model data.";
+        }
+      }
+
+
+
+
+      /* ---------- CSV EXPORT LOGIC ---------- */
+
+
+      function exportToCSV() {
+        if (!filteredArtistsForExport.length) {
+          alert("No data to export.");
+          return;
+        }
+
+
+        const headers = ["Artist", "Country", "Genre", "Mu", "Sigma", "Mu/Sigma", "Mult", "NPV"];
+        const rows = filteredArtistsForExport.map(a => [
+          `"${(a.artist || "").replace(/"/g, '""')}"`,
+          `"${(a.country || "").replace(/"/g, '""')}"`,
+          `"${(a.genre || "").replace(/"/g, '""')}"`,
+          a.mu,
+          a.sigma,
+          a.muSigma,
+          a.mult,
+          a.npv
+        ]);
+
+
+        const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+
+        const dateStr = new Date().toISOString().split('T')[0];
+        link.setAttribute("href", url);
+        link.setAttribute("download", `lampad_index_export_${dateStr}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+
+
+
+      /* ---------- Event wiring ---------- */
+
+
+
+
+      artistInput.addEventListener("input", applyFilters);
+      countryInput.addEventListener("input", applyFilters);
+      genreInput.addEventListener("input", applyFilters);
+      npvMinInput.addEventListener("input", applyFilters);
+      npvMaxInput.addEventListener("input", applyFilters);
+      multMinInput.addEventListener("input", applyFilters);
+      multMaxInput.addEventListener("input", applyFilters);
+
+
+
+
+      npvMinInput.addEventListener("keydown", handleNpvKeyDown);
+      npvMaxInput.addEventListener("keydown", handleNpvKeyDown);
+
+
+
+
+      headerCells.forEach(th => {
+        th.addEventListener("click", () => {
+          const key = th.getAttribute("data-sort-key");
+          if (!key) return;
+
+
+
+
+          if (sortState.key === key) {
+            sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+          } else {
+            sortState.key = key;
+            if (["mu", "sigma", "muSigma", "mult", "npv"].includes(key)) {
+              sortState.dir = "desc";
+            } else {
+              sortState.dir = "asc";
+            }
+          }
+
+
+
+
+          applyFilters();
+        });
+      });
+
+
+
+
+      /* ---------- Boot ---------- */
+
+
+
+
+      loadIndexData();
+
+
+      /* ---------- KEYBOARD SHORTCUTS ---------- */
+
+
+      window.addEventListener("keydown", (e) => {
+        if (valOverlay.classList.contains("active")) {
+          if (e.key === "Escape" || e.key === "Delete" || e.key === "Backspace") {
+            // Only close on Backspace/Delete if not typing in an input
+            if ((e.key === "Delete" || e.key === "Backspace") && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) {
+              return;
+            }
+            closeValuation();
+          }
+        }
+      });
+
+
+      document.getElementById("li-export-csv").addEventListener("click", exportToCSV);
+    })();
+  </script>
+</body>
+
+</html>
