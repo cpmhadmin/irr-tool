@@ -1,0 +1,12 @@
+{
+  "name": "lampad-music-finance-index",
+  "version": "1.0.0",
+  "description": "Standalone web application for tracking and pricing music catalog assets.",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
