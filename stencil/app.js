@@ -20,82 +20,37 @@ const GAME_STATE = {
     totalPathLength: 0 // Total length of the letter path
 };
 
+// Curve Tolerance Boost
+const CURVED_LETTERS = ['B', 'C', 'D', 'G', 'J', 'O', 'P', 'Q', 'R', 'S', 'U'];
+
 // Simplified Vector Paths (0-1 coordinate space)
-// High-res points for curves
 const LETTER_PATHS = {
-    'A': [
-        [[0.5, 0], [0.1, 1]],   // Left diagonal
-        [[0.5, 0], [0.9, 1]],   // Right diagonal
-        [[0.25, 0.6], [0.75, 0.6]] // Crossbar
-    ],
-    'B': [
-        [[0.1, 0], [0.1, 1]],   // Spine
-        // Top loop (smooth arc)
-        [[0.1, 0], [0.5, 0], [0.7, 0.1], [0.8, 0.25], [0.7, 0.4], [0.5, 0.5], [0.1, 0.5]],
-        // Bottom loop
-        [[0.1, 0.5], [0.5, 0.5], [0.75, 0.6], [0.85, 0.75], [0.75, 0.9], [0.5, 1], [0.1, 1]]
-    ],
-    'C': [
-        // Smooth C curve (counter-clockwise from top-right)
-        [[0.85, 0.2], [0.7, 0.05], [0.5, 0], [0.3, 0.05], [0.15, 0.2], [0.1, 0.5], [0.15, 0.8], [0.3, 0.95], [0.5, 1], [0.7, 0.95], [0.85, 0.8]]
-    ],
-    'F': [
-        [[0.15, 0], [0.15, 1]],   // Spine
-        [[0.15, 0], [0.85, 0]],   // Top bar
-        [[0.15, 0.5], [0.75, 0.5]] // Middle bar
-    ],
-    'O': [
-        // Smooth Oval (24 points)
-        Array.from({ length: 25 }, (_, i) => {
-            const angle = (i / 24) * Math.PI * 2; // 0 to 2PI
-            // x = 0.5 + 0.4 * cos(theta - PI/2) -> start top (0,-1)
-            // y = 0.5 + 0.5 * sin(theta - PI/2)
-            const theta = angle - Math.PI / 2;
-            return [0.5 + 0.45 * Math.cos(theta), 0.5 + 0.5 * Math.sin(theta)];
-        })
-    ],
-    'X': [
-        [[0.15, 0], [0.85, 1]],   // Diagonal 1
-        [[0.85, 0], [0.15, 1]]    // Diagonal 2
-    ],
-    'T': [
-        [[0.5, 0], [0.5, 1]],   // Spine
-        [[0.1, 0], [0.9, 0]]    // Bar
-    ],
-    'H': [
-        [[0.2, 0], [0.2, 1]],   // Left leg
-        [[0.8, 0], [0.8, 1]],   // Right leg
-        [[0.2, 0.5], [0.8, 0.5]] // Crossbar
-    ],
-    'P': [
-        [[0.15, 0], [0.15, 1]],   // Spine
-        // Loop
-        [[0.15, 0], [0.6, 0], [0.8, 0.1], [0.85, 0.25], [0.8, 0.4], [0.6, 0.5], [0.15, 0.5]]
-    ],
-    'R': [
-        [[0.15, 0], [0.15, 1]], // Spine
-        // Top Loop
-        [[0.15, 0], [0.6, 0], [0.8, 0.1], [0.85, 0.25], [0.8, 0.4], [0.6, 0.5], [0.15, 0.5]],
-        // Leg (can be curved or straight, straight is clearer for R usually)
-        [[0.5, 0.5], [0.85, 1]]
-    ],
-    'M': [
-        [[0.1, 1], [0.1, 0]], // Left leg up
-        [[0.1, 0], [0.5, 0.8]], // Mid down
-        [[0.5, 0.8], [0.9, 0]], // Mid up
-        [[0.9, 0], [0.9, 1]] // Right leg down
-    ],
-    'S': [
-        // Smooth S curve (Bezier-like approximation)
-        // Top arc (right to left)
-        [
-            [0.85, 0.15], [0.7, 0.05], [0.5, 0], [0.3, 0.05], [0.15, 0.15],
-            [0.1, 0.25], [0.15, 0.35], [0.3, 0.45], [0.5, 0.5], // Cross over
-            [0.7, 0.55], [0.85, 0.65], [0.9, 0.75], // Bottom curve start
-            [0.85, 0.9], [0.7, 0.95], [0.5, 1], [0.3, 0.95], [0.15, 0.85]
-        ]
-    ]
-    // Add more as needed
+    'A': [[[0.5, 0], [0.1, 1]], [[0.5, 0], [0.9, 1]], [[0.25, 0.6], [0.75, 0.6]]],
+    'B': [[[0.1, 0], [0.1, 1]], [[0.1, 0], [0.5, 0], [0.7, 0.1], [0.8, 0.25], [0.7, 0.4], [0.5, 0.5], [0.1, 0.5]], [[0.1, 0.5], [0.5, 0.5], [0.75, 0.6], [0.85, 0.75], [0.75, 0.9], [0.5, 1], [0.1, 1]]],
+    'C': [[[0.85, 0.2], [0.7, 0.05], [0.5, 0], [0.3, 0.05], [0.15, 0.2], [0.1, 0.5], [0.15, 0.8], [0.3, 0.95], [0.5, 1], [0.7, 0.95], [0.85, 0.8]]],
+    'D': [[[0.15, 0], [0.15, 1]], [[0.15, 0], [0.5, 0], [0.8, 0.2], [0.9, 0.5], [0.8, 0.8], [0.5, 1], [0.15, 1]]],
+    'E': [[[0.15, 0], [0.15, 1]], [[0.15, 0], [0.85, 0]], [[0.15, 0.5], [0.75, 0.5]], [[0.15, 1], [0.85, 1]]],
+    'F': [[[0.15, 0], [0.15, 1]], [[0.15, 0], [0.85, 0]], [[0.15, 0.5], [0.75, 0.5]]],
+    'G': [[[0.85, 0.2], [0.7, 0.05], [0.5, 0], [0.3, 0.05], [0.15, 0.2], [0.1, 0.5], [0.15, 0.8], [0.3, 0.95], [0.5, 1], [0.7, 0.95], [0.9, 0.8], [0.9, 0.6], [0.6, 0.6]]],
+    'H': [[[0.2, 0], [0.2, 1]], [[0.8, 0], [0.8, 1]], [[0.2, 0.5], [0.8, 0.5]]],
+    'I': [[[0.5, 0], [0.5, 1]], [[0.2, 0], [0.8, 0]], [[0.2, 1], [0.8, 1]]],
+    'J': [[[0.6, 0], [0.6, 0.85], [0.5, 1], [0.3, 1], [0.1, 0.8]]],
+    'K': [[[0.2, 0], [0.2, 1]], [[0.8, 0], [0.2, 0.5]], [[0.2, 0.5], [0.8, 1]]],
+    'L': [[[0.2, 0], [0.2, 1]], [[0.2, 1], [0.8, 1]]],
+    'M': [[[0.1, 1], [0.1, 0]], [[0.1, 0], [0.5, 0.8]], [[0.5, 0.8], [0.9, 0]], [[0.9, 0], [0.9, 1]]],
+    'N': [[[0.2, 1], [0.2, 0]], [[0.2, 0], [0.8, 1]], [[0.8, 1], [0.8, 0]]],
+    'O': [Array.from({ length: 25 }, (_, i) => { const a = (i / 24) * Math.PI * 2, t = a - Math.PI / 2; return [0.5 + 0.45 * Math.cos(t), 0.5 + 0.5 * Math.sin(t)]; })],
+    'P': [[[0.15, 0], [0.15, 1]], [[0.15, 0], [0.6, 0], [0.8, 0.1], [0.85, 0.25], [0.8, 0.4], [0.6, 0.5], [0.15, 0.5]]],
+    'Q': [Array.from({ length: 25 }, (_, i) => { const a = (i / 24) * Math.PI * 2, t = a - Math.PI / 2; return [0.5 + 0.45 * Math.cos(t), 0.5 + 0.5 * Math.sin(t)]; }), [[0.6, 0.7], [0.9, 1]]],
+    'R': [[[0.15, 0], [0.15, 1]], [[0.15, 0], [0.6, 0], [0.8, 0.1], [0.85, 0.25], [0.8, 0.4], [0.6, 0.5], [0.15, 0.5]], [[0.5, 0.5], [0.85, 1]]],
+    'S': [[[0.85, 0.15], [0.7, 0.05], [0.5, 0], [0.3, 0.05], [0.15, 0.15], [0.1, 0.25], [0.15, 0.35], [0.3, 0.45], [0.5, 0.5], [0.7, 0.55], [0.85, 0.65], [0.9, 0.75], [0.85, 0.9], [0.7, 0.95], [0.5, 1], [0.3, 0.95], [0.15, 0.85]]],
+    'T': [[[0.5, 0], [0.5, 1]], [[0.1, 0], [0.9, 0]]],
+    'U': [[[0.2, 0], [0.2, 0.8], [0.3, 0.95], [0.5, 1], [0.7, 0.95], [0.8, 0.8], [0.8, 0]]],
+    'V': [[[0.1, 0], [0.5, 1]], [[0.5, 1], [0.9, 0]]],
+    'W': [[[0.1, 0], [0.3, 1]], [[0.3, 1], [0.5, 0.5]], [[0.5, 0.5], [0.7, 1]], [[0.7, 1], [0.9, 0]]],
+    'X': [[[0.15, 0], [0.85, 1]], [[0.85, 0], [0.15, 1]]],
+    'Y': [[[0.15, 0], [0.5, 0.5]], [[0.85, 0], [0.5, 0.5]], [[0.5, 0.5], [0.5, 1]]],
+    'Z': [[[0.15, 0], [0.85, 0]], [[0.85, 0], [0.15, 1]], [[0.15, 1], [0.85, 1]]]
 };
 
 // Words that only use defined letters
@@ -442,6 +397,12 @@ function validateStroke() {
     const s = CONFIG.letterSize;
     const w = s * 0.7;
 
+    // Dynamic Tolerance
+    let currentTolerance = CONFIG.hitToleranceWidth;
+    if (CURVED_LETTERS.includes(letter)) {
+        currentTolerance *= 1.35; // 35% more forgiving for curves
+    }
+
     // 1. Is the stroke inside the Halo?
     // We check this by drawing the halo on hitCanvas and checking overlap
     // Re-draw halo just to be safe
@@ -450,7 +411,7 @@ function validateStroke() {
     hitCtx.scale(dpr, dpr);
     hitCtx.lineCap = 'round';
     hitCtx.lineJoin = 'round';
-    hitCtx.lineWidth = CONFIG.hitToleranceWidth;
+    hitCtx.lineWidth = currentTolerance;
     hitCtx.strokeStyle = 'red';
 
     hitCtx.beginPath();
@@ -503,98 +464,27 @@ function checkCoverage() {
     const s = CONFIG.letterSize;
     const w = s * 0.7;
 
+    // Dynamic Tolerance Boost for Curves
+    let currentTolerance = CONFIG.hitToleranceWidth;
+    if (CURVED_LETTERS.includes(letter)) {
+        currentTolerance *= 1.35;
+    }
+
     // We must pass EVERY stroke in the letter
-    // e.g. 'A' has 3 strokes. All 3 must be covered > 50%
     const STROKE_THRESHOLD = 0.50;
     let allStrokesPassed = true;
 
     for (let i = 0; i < path.length; i++) {
         const strokeSegment = path[i];
 
-        // 1. Clear & Setup
-        hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
-        hitCtx.save();
-        hitCtx.scale(dpr, dpr);
-        hitCtx.lineCap = 'round';
-        hitCtx.lineJoin = 'round';
-
-        // 2. Draw Target Stroke (Red)
-        // Draw slightly wider than user pen to ensure good denominator
-        hitCtx.lineWidth = CONFIG.hitToleranceWidth;
-        hitCtx.strokeStyle = 'red';
-
-        hitCtx.beginPath();
-        hitCtx.moveTo(lx + strokeSegment[0][0] * w, ly + strokeSegment[0][1] * s);
-        for (let k = 1; k < strokeSegment.length; k++) {
-            hitCtx.lineTo(lx + strokeSegment[k][0] * w, ly + strokeSegment[k][1] * s);
-        }
-        hitCtx.stroke();
-
-        // Calculate Bounding Box for Optimization (Logic coords)
-        let minX = strokeSegment[0][0], maxX = strokeSegment[0][0];
-        let minY = strokeSegment[0][1], maxY = strokeSegment[0][1];
-        for (let k = 1; k < strokeSegment.length; k++) {
-            minX = Math.min(minX, strokeSegment[k][0]);
-            maxX = Math.max(maxX, strokeSegment[k][0]);
-            minY = Math.min(minY, strokeSegment[k][1]);
-            maxY = Math.max(maxY, strokeSegment[k][1]);
-        }
-
-        // Convert to Pixel coords for pixel reading
-        const pad = CONFIG.hitToleranceWidth;
-        // px start/end
-        const pStartX = (lx + minX * w) - pad;
-        const pStartY = (ly + minY * s) - pad;
-        const pWidth = (maxX - minX) * w + (pad * 2);
-        const pHeight = (maxY - minY) * s + (pad * 2);
-
-        // 3. Draw User Paint (Blue) with 'source-in'
-        hitCtx.globalCompositeOperation = 'source-in';
-        hitCtx.strokeStyle = 'blue';
-        // User paint is thinner
-        hitCtx.lineWidth = CONFIG.hitToleranceWidth * 0.5;
-
-        hitCtx.beginPath();
-        // Draw ALL user strokes to see if ANY cover this segment
-        for (let uStroke of GAME_STATE.currentLetterStrokes) {
-            if (uStroke.length === 0) continue;
-            hitCtx.moveTo(uStroke[0].x, uStroke[0].y);
-            for (let u = 1; u < uStroke.length; u++) hitCtx.lineTo(uStroke[u].x, uStroke[u].y);
-        }
-        hitCtx.stroke();
-
-        hitCtx.restore(); // restores scale/composite
-
-        // 4. Count Pixels (Red vs Blue is handled by source-in, we just count non-transparent)
-        // We need denominator? 
-        // Logic: 
-        // We need to know how many pixels "Red" had vs how many "Blue" kept.
-        // Actually, 'source-in' replaces everything. We lose the Red count.
-        // Better approach:
-        //  a. Draw Red -> Count Red (Denominator)
-        //  b. Draw Blue (source-in) -> Count Blue (Numerator)
-
-        // Let's redo step 2/3 carefully.
-
-        // RE-DRAW RED just to count it (or we could use math estimation, but pixel counting is safer for curves)
-        // To be efficient, we scan the bounding box once? No.
-        // Let's allow a slightly less optimized but correct 2-pass approach.
-    }
-
-    // RE-IMPLEMENTING LOOP FOR CORRECTNESS with 2-pass pixel count
-    // (This overrides the loop above for clean code injection)
-
-    for (let i = 0; i < path.length; i++) {
-        const strokeSegment = path[i];
-
-        // PASS 1: Count Target Pixels
+        // PASS 1: Count Target Pixels (Red Halo)
         hitCtx.globalCompositeOperation = 'source-over';
         hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
         hitCtx.save();
         hitCtx.scale(dpr, dpr);
         hitCtx.lineCap = 'round';
         hitCtx.lineJoin = 'round';
-        hitCtx.lineWidth = CONFIG.hitToleranceWidth;
+        hitCtx.lineWidth = currentTolerance;
         hitCtx.strokeStyle = 'red';
 
         hitCtx.beginPath();
@@ -612,28 +502,29 @@ function checkCoverage() {
             minY = Math.min(minY, strokeSegment[k][1]);
             maxY = Math.max(maxY, strokeSegment[k][1]);
         }
-        const bX = Math.floor((lx + minX * w - CONFIG.hitToleranceWidth) * dpr);
-        const bY = Math.floor((ly + minY * s - CONFIG.hitToleranceWidth) * dpr);
-        const bW = Math.ceil(((maxX - minX) * w + CONFIG.hitToleranceWidth * 2) * dpr);
-        const bH = Math.ceil(((maxY - minY) * s + CONFIG.hitToleranceWidth * 2) * dpr);
+        const bX = Math.floor((lx + minX * w - currentTolerance) * dpr);
+        const bY = Math.floor((ly + minY * s - currentTolerance) * dpr);
+        const bW = Math.ceil(((maxX - minX) * w + currentTolerance * 2) * dpr);
+        const bH = Math.ceil(((maxY - minY) * s + currentTolerance * 2) * dpr);
 
         const safeBX = Math.max(0, bX);
         const safeBY = Math.max(0, bY);
         const safeBW = Math.min(hitCanvas.width - safeBX, bW);
         const safeBH = Math.min(hitCanvas.height - safeBY, bH);
 
-        if (safeBW <= 0 || safeBH <= 0) continue; // Offscreen?
+        if (safeBW <= 0 || safeBH <= 0) continue;
 
         const pixels1 = hitCtx.getImageData(safeBX, safeBY, safeBW, safeBH).data;
         let targetCount = 0;
         for (let p = 3; p < pixels1.length; p += 4) { if (pixels1[p] > 20) targetCount++; }
 
-        // PASS 2: Count Overlap
+        // PASS 2: Count Overlap (Blue User Paint)
         hitCtx.save();
         hitCtx.scale(dpr, dpr);
         hitCtx.globalCompositeOperation = 'source-in';
         hitCtx.strokeStyle = 'blue';
-        hitCtx.lineWidth = CONFIG.hitToleranceWidth * 0.5; // User brush size
+        // User paint is thinner
+        hitCtx.lineWidth = currentTolerance * 0.5;
         hitCtx.lineCap = 'round';
         hitCtx.lineJoin = 'round';
 
@@ -653,7 +544,6 @@ function checkCoverage() {
         // CHECK
         if (targetCount > 0) {
             const ratio = coveredCount / targetCount;
-            // console.log(`Segment ${i}: ${Math.floor(ratio*100)}%`);
             if (ratio < STROKE_THRESHOLD) {
                 allStrokesPassed = false;
                 break; // Fail early
