@@ -1,0 +1,10 @@
+# Netlify configuration
+# This file is optional but helps with deployment settings
+
+[build]
+  publish = "."
+  
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
