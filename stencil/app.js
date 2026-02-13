@@ -31,14 +31,14 @@ const CVC_WORDS = [
 
 // Configuration
 const CONFIG = {
-    // A stroke is "valid" if 60% of its points are inside the stencil
-    accuracyThreshold: 0.60,
+    // A stroke is "valid" if 50% of its points are inside the stencil
+    accuracyThreshold: 0.50, // Slightly more forgiving placement
 
-    // The letter is "complete" if 85% of its area is covered by valid strokes
-    completionThreshold: 0.85,
+    // The letter is "complete" if 25% of its AREA is covered (writing vs coloring)
+    completionThreshold: 0.25,
 
-    fadeSpeed: 0.05,
-    fontFamily: '"Arial Rounded MT Bold", "Arial", sans-serif',
+    fadeSpeed: 0.08,
+    fontFamily: '"Courier New", Courier, monospace', // Monospace is thinner/cleaner
     guideColor: 'rgba(139, 119, 101, 0.15)',
 
     // Layout calculated on resize
@@ -177,6 +177,14 @@ function calculateTargetPixels() {
     hitCtx.fillStyle = 'red'; // Draw in solid red
 
     const targetX = getLetterX(GAME_STATE.letterIndex);
+
+    // Draw thick stroke first to expand hit area (match validation logic)
+    hitCtx.lineWidth = CONFIG.letterSize / 4;
+    hitCtx.strokeStyle = 'red';
+    hitCtx.lineJoin = 'round';
+    hitCtx.strokeText(letter, targetX, CONFIG.baseline);
+
+    // Then fill
     hitCtx.fillText(letter, targetX, CONFIG.baseline);
     hitCtx.restore();
 
@@ -410,6 +418,14 @@ function validateStroke() {
 
     const targetX = getLetterX(GAME_STATE.letterIndex);
     const letter = GAME_STATE.word[GAME_STATE.letterIndex];
+
+    // Draw thick stroke first to expand hit area
+    hitCtx.lineWidth = CONFIG.letterSize / 4; // Allow significant margin of error
+    hitCtx.strokeStyle = 'red';
+    hitCtx.lineJoin = 'round';
+    hitCtx.strokeText(letter, targetX, CONFIG.baseline);
+
+    // Then fill
     hitCtx.fillText(letter, targetX, CONFIG.baseline);
     hitCtx.restore();
 
@@ -447,6 +463,7 @@ function validateStroke() {
     GAME_STATE.currentStroke = [];
 
     // 3. Check Overall Coverage
+    // NOTE: We check coverage using a LARGER brush (lineWidth 20) basically saying "did they touch enough of the letter?"
     checkCoverage();
 }
 
@@ -471,7 +488,7 @@ function checkCoverage() {
     hitCtx.save();
     hitCtx.scale(dpr, dpr);
     hitCtx.strokeStyle = '#0000FF';
-    hitCtx.lineWidth = 14;
+    hitCtx.lineWidth = CONFIG.letterSize / 3; // Make the "brush" for validation very thick relative to letter size
     hitCtx.lineCap = 'round';
     hitCtx.lineJoin = 'round';
 
