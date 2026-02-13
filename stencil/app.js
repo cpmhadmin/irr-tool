@@ -172,6 +172,15 @@ function init() {
         resetGame();
     });
 
+    // Level Listener - Update word immediately if haven't started drawing?
+    // Or just let it take effect next word. 
+    // User expectation: Change level -> New word appears from that level if game hasn't really started.
+    document.getElementById('levelInput').addEventListener('change', () => {
+        if (!GAME_STATE.hasStarted) {
+            startNewWord(); // Reroll immediately if just waiting
+        }
+    });
+
     // Victory Modal
     // Note: Modal HTML might not be injected yet if full file rewrite didn't happen perfectly, but assuming it exists from Step 1.
     const playAgainBtn = document.getElementById('playAgainBtn');
@@ -201,10 +210,33 @@ function resetGame() {
 }
 
 function startNewWord() {
-    let newWord = GAME_STATE.word;
-    while (newWord === GAME_STATE.word) {
-        newWord = VALID_WORDS[Math.floor(Math.random() * VALID_WORDS.length)];
+    // 1. Determine eligible words
+    const levelSelect = document.getElementById('levelInput');
+    const selectedLevel = levelSelect ? levelSelect.value : 'all';
+
+    let eligibleWords = [];
+    if (selectedLevel === 'all' || !WORD_BANKS[selectedLevel]) {
+        eligibleWords = VALID_WORDS;
+    } else {
+        eligibleWords = WORD_BANKS[selectedLevel];
     }
+
+    // Safety check
+    if (eligibleWords.length === 0) eligibleWords = VALID_WORDS;
+
+    // 2. Pick a new word (different from current if possible)
+    let newWord = GAME_STATE.word;
+    // Allow repeat if only 1 word available (unlikely)
+    if (eligibleWords.length > 1) {
+        let attempts = 0;
+        while (newWord === GAME_STATE.word && attempts < 10) {
+            newWord = eligibleWords[Math.floor(Math.random() * eligibleWords.length)];
+            attempts++;
+        }
+    } else {
+        newWord = eligibleWords[0];
+    }
+
     GAME_STATE.word = newWord;
     GAME_STATE.letterIndex = 0;
 
