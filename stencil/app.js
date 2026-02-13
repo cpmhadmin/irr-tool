@@ -87,12 +87,14 @@ const VALID_WORDS = [
 // Configuration
 const CONFIG = {
     visualStrokeWidth: 4,      // Thin lines for the letter skeleton
-    hitToleranceWidth: 55,     // Very wide invisible stroke for checking accuracy (The Halo)
+    hitToleranceWidth: 40,     // Reduced 55->40: Tighter tolerance to prevent "accidental" overlaps
 
     // COMPLETION LOGIC:
     // We check how much of the (wide) path area is painted.
     // Since the path is wide, filling it roughly is easier.
-    completionThreshold: 0.65, // Needs to cover 65% of the "wide" tolerance zone area
+    // Increased 0.65->0.85: Must cover 85% of the letter path.
+    // For 'A', the legs are ~80% of length. This forces drawing the crossbar.
+    completionThreshold: 0.85,
 
     accuracyThreshold: 0.1, // Not used directly in new logic, implicit in hitToleranceWidth
 
