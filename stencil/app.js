@@ -13,10 +13,11 @@ const GAME_STATE = {
     word: '',
     letterIndex: 0,
     isDrawing: false,
-    currentStroke: [], // Array of {x, y} points
-    fadingStrokes: [], // Array of {points: [], opacity: 1}
-    completedLetters: [], // Array of booleans or letters
-    showGuide: true
+    currentStroke: [],
+    fadingStrokes: [],
+    currentLetterStrokes: [], // Strokes that are "good" but letter not finished
+    completedLetters: [],
+    totalLetterPixels: 0 // Count of pixels in the current target letter
 };
 
 const CVC_WORDS = [
@@ -30,8 +31,12 @@ const CVC_WORDS = [
 
 // Configuration
 const CONFIG = {
-    // 70% of drawn points must be inside the letter pixels
-    tolerance: 0.70,
+    // A stroke is "valid" if 60% of its points are inside the stencil
+    accuracyThreshold: 0.60,
+
+    // The letter is "complete" if 85% of its area is covered by valid strokes
+    completionThreshold: 0.85,
+
     fadeSpeed: 0.05,
     fontFamily: '"Arial Rounded MT Bold", "Arial", sans-serif',
     guideColor: 'rgba(139, 119, 101, 0.15)',
@@ -40,7 +45,7 @@ const CONFIG = {
     letterSize: 0,
     baseline: 0,
     startX: 0,
-    letterPadding: 15 // px between letters
+    letterPadding: 15
 };
 
 // Guide line positions (percentages)
@@ -82,23 +87,36 @@ function init() {
 }
 
 function startNewWord() {
-    // Pick a word different from current if possible
     let newWord = GAME_STATE.word;
     while (newWord === GAME_STATE.word) {
         newWord = CVC_WORDS[Math.floor(Math.random() * CVC_WORDS.length)];
     }
     GAME_STATE.word = newWord;
-    resetWord();
+    GAME_STATE.letterIndex = 0;
 
-    // Re-calculate centering since word length changed
+    resetForNewLetter(); // Word setup
+
+    // Re-calculate centering
     calculateLayout();
+}
+
+function resetForNewLetter() {
+    GAME_STATE.fadingStrokes = [];
+    GAME_STATE.currentStroke = [];
+    GAME_STATE.currentLetterStrokes = [];
+
+    // Re-initialize completed array if starting fresh word
+    if (GAME_STATE.letterIndex === 0) {
+        GAME_STATE.completedLetters = new Array(GAME_STATE.word.length).fill(false);
+    }
+
+    // Calculate pixel mass of the new target letter for coverage checks
+    calculateTargetPixels();
 }
 
 function resetWord() {
     GAME_STATE.letterIndex = 0;
-    GAME_STATE.fadingStrokes = [];
-    GAME_STATE.currentStroke = [];
-    GAME_STATE.completedLetters = new Array(GAME_STATE.word.length).fill(false);
+    resetForNewLetter();
 }
 
 // Resize & Calculations
@@ -113,7 +131,6 @@ function resizeCanvas() {
     // Resize Hit Canvas (Match physical pixels)
     hitCanvas.width = canvas.width;
     hitCanvas.height = canvas.height;
-    // hitCtx default transform is identity, which matches physical pixels
 
     calculateLayout();
 }
@@ -125,7 +142,6 @@ function calculateLayout() {
     // Font sizing
     // Sky (0.25) to Grass (0.65) = 0.40 height
     const bodyHeight = (GUIDES.grass - GUIDES.sky) * canvasHeight;
-    // Set font size relative to body height (approx 1.5x to cover ascenders/descenders)
     CONFIG.letterSize = Math.floor(bodyHeight * 1.8);
     CONFIG.baseline = Math.floor(canvasHeight * GUIDES.grass);
 
@@ -139,6 +155,45 @@ function calculateLayout() {
     totalWidth -= CONFIG.letterPadding; // Remove last padding
 
     CONFIG.startX = (rect.width - totalWidth) / 2;
+
+    // Re-calc target pixels since size changed
+    calculateTargetPixels();
+}
+
+function calculateTargetPixels() {
+    if (GAME_STATE.letterIndex >= GAME_STATE.word.length) return;
+
+    const letter = GAME_STATE.word[GAME_STATE.letterIndex];
+    if (!letter) return;
+
+    const dpr = window.devicePixelRatio || 1;
+
+    // Clear Hit Canvas
+    hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
+    hitCtx.save();
+    hitCtx.scale(dpr, dpr);
+    hitCtx.font = `bold ${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
+    hitCtx.textBaseline = 'alphabetic';
+    hitCtx.fillStyle = 'red'; // Draw in solid red
+
+    const targetX = getLetterX(GAME_STATE.letterIndex);
+    hitCtx.fillText(letter, targetX, CONFIG.baseline);
+    hitCtx.restore();
+
+    // Scan buffer to count pixels
+    // Optimization: limit scan to letter bounding box
+    const width = Math.floor(ctx.measureText(letter).width * dpr) + 20 * dpr;
+    const height = Math.floor(CONFIG.letterSize * dpr) + 20 * dpr;
+
+    // Count pixels
+    const pixelData = hitCtx.getImageData(0, 0, hitCanvas.width, hitCanvas.height).data;
+
+    let count = 0;
+    for (let i = 3; i < pixelData.length; i += 4) {
+        if (pixelData[i] > 20) count++;
+    }
+
+    GAME_STATE.totalLetterPixels = count;
 }
 
 // Drawing Loop
@@ -148,6 +203,7 @@ function gameLoop() {
     drawGuideLines();
     drawWordStencil();
     drawCompletedLetters();
+    drawCurrentLetterStrokes();
     drawFadingStrokes();
     drawCurrentStroke();
 
@@ -210,7 +266,7 @@ function drawWordStencil() {
     ctx.textBaseline = 'alphabetic';
 
     for (let i = 0; i < GAME_STATE.word.length; i++) {
-        // Don't draw stencil if already completed (optional, keeping it for now looks cleaner)
+        // Don't draw stencil if already completed
         if (GAME_STATE.completedLetters[i]) continue;
 
         // If it's the current target, slight highlight
@@ -237,6 +293,25 @@ function drawCompletedLetters() {
         }
     }
     ctx.restore();
+}
+
+function drawCurrentLetterStrokes() {
+    if (GAME_STATE.currentLetterStrokes.length === 0) return;
+
+    ctx.beginPath();
+    ctx.strokeStyle = '#2c3e50';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    for (let stroke of GAME_STATE.currentLetterStrokes) {
+        if (stroke.length === 0) continue;
+        ctx.moveTo(stroke[0].x, stroke[0].y);
+        for (let i = 1; i < stroke.length; i++) {
+            ctx.lineTo(stroke[i].x, stroke[i].y);
+        }
+    }
+    ctx.stroke();
 }
 
 function drawCurrentStroke() {
@@ -321,98 +396,120 @@ function endDrawing(e) {
 
 function validateStroke() {
     const points = GAME_STATE.currentStroke;
-    if (points.length < 5) return; // Ignore accidental taps
+    if (points.length < 5) return;
 
     const dpr = window.devicePixelRatio || 1;
 
-    // 1. Setup Hit Canvas
+    // 1. Is this specific stroke valid? (Inside the guide)
     hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
-
-    // Save/Scale for drawing the target letter
     hitCtx.save();
     hitCtx.scale(dpr, dpr);
     hitCtx.font = `bold ${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
     hitCtx.textBaseline = 'alphabetic';
-    hitCtx.fillStyle = '#FFFFFF'; // White (nonzero)
+    hitCtx.fillStyle = 'red';
 
     const targetX = getLetterX(GAME_STATE.letterIndex);
     const letter = GAME_STATE.word[GAME_STATE.letterIndex];
     hitCtx.fillText(letter, targetX, CONFIG.baseline);
     hitCtx.restore();
 
-    // 2. Check overlap
-    // Optimization: Get image data for the drawing bounding box only
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (let p of points) {
-        if (p.x < minX) minX = p.x;
-        if (p.y < minY) minY = p.y;
-        if (p.x > maxX) maxX = p.x;
-        if (p.y > maxY) maxY = p.y;
-    }
-
-    // Pad bounding box
-    const padding = 10;
-    const bx = Math.floor((minX - padding) * dpr);
-    const by = Math.floor((minY - padding) * dpr);
-    const bw = Math.ceil((maxX - minX + padding * 2) * dpr);
-    const bh = Math.ceil((maxY - minY + padding * 2) * dpr);
-
-    // Handle edge cases (off screen)
-    if (bx < 0 || by < 0 || bx + bw > hitCanvas.width || by + bh > hitCanvas.height) {
-        // Fallback to simple check or just fail
-        // For simplicity, let's just create a safe getters
-    }
-
-    // Actually, getting full canvas data for just point checking is slow
-    // But getting small chunks is fast.
-    // Let's just check each point individually but simpler: only check if we are inside the letter's roughly bounding box first?
-    // No, precise check is needed.
-
     let hits = 0;
     let totalPoints = 0;
-
-    // We can't easily grab a buffer for arbitrary points without constructing a mask
-    // But checking 1x1 pixels is slow. 
-    // Compromise: Grab the data for the LETTER's bounding box and check points against relative coords.
-    // That's complex math.
-
-    // FASTEST MVP WAY: Check every 3rd point. 1x1 getImageData is actually okay-ish for < 100 calls on modern devices.
-    // Let's try it.
-
     const sampleRate = 3;
+
     for (let i = 0; i < points.length; i += sampleRate) {
         const pt = points[i];
         const px = Math.floor(pt.x * dpr);
         const py = Math.floor(pt.y * dpr);
 
-        // Safety check
-        if (px < 0 || py < 0 || px >= hitCanvas.width || py >= hitCanvas.height) continue;
-
-        const alpha = hitCtx.getImageData(px, py, 1, 1).data[3];
-        if (alpha > 50) hits++; // Hit
-        totalPoints++;
+        if (px >= 0 && py >= 0 && px < hitCanvas.width && py < hitCanvas.height) {
+            const alpha = hitCtx.getImageData(px, py, 1, 1).data[3];
+            if (alpha > 50) hits++;
+            totalPoints++;
+        }
     }
 
     const accuracy = totalPoints > 0 ? (hits / totalPoints) : 0;
+    const isValidStroke = accuracy >= CONFIG.accuracyThreshold;
 
-    if (accuracy >= CONFIG.tolerance) {
-        // Success
-        GAME_STATE.completedLetters[GAME_STATE.letterIndex] = true;
-        GAME_STATE.letterIndex++;
-
-        // Word complete?
-        if (GAME_STATE.letterIndex >= GAME_STATE.word.length) {
-            setTimeout(startNewWord, 800);
-        }
-    } else {
-        // Fail
+    if (!isValidStroke) {
+        // Bad stroke: Fade it out
         GAME_STATE.fadingStrokes.push({
             points: [...GAME_STATE.currentStroke],
             opacity: 1.0
         });
+        GAME_STATE.currentStroke = [];
+        return;
     }
 
+    // 2. Good stroke: Keep it
+    GAME_STATE.currentLetterStrokes.push([...GAME_STATE.currentStroke]);
     GAME_STATE.currentStroke = [];
+
+    // 3. Check Overall Coverage
+    checkCoverage();
+}
+
+function checkCoverage() {
+    const dpr = window.devicePixelRatio || 1;
+    hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
+
+    // Draw Stencil (Red)
+    hitCtx.save();
+    hitCtx.scale(dpr, dpr);
+    hitCtx.font = `bold ${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
+    hitCtx.textBaseline = 'alphabetic';
+    hitCtx.fillStyle = '#FF0000';
+    const targetX = getLetterX(GAME_STATE.letterIndex);
+    const letter = GAME_STATE.word[GAME_STATE.letterIndex];
+    hitCtx.fillText(letter, targetX, CONFIG.baseline);
+    hitCtx.restore();
+
+    // Mask with valid strokes (Blue)
+    hitCtx.globalCompositeOperation = 'source-in';
+
+    hitCtx.save();
+    hitCtx.scale(dpr, dpr);
+    hitCtx.strokeStyle = '#0000FF';
+    hitCtx.lineWidth = 14;
+    hitCtx.lineCap = 'round';
+    hitCtx.lineJoin = 'round';
+
+    hitCtx.beginPath();
+    for (let stroke of GAME_STATE.currentLetterStrokes) {
+        if (stroke.length > 0) {
+            hitCtx.moveTo(stroke[0].x, stroke[0].y);
+            for (let i = 1; i < stroke.length; i++) hitCtx.lineTo(stroke[i].x, stroke[i].y);
+        }
+    }
+    hitCtx.stroke();
+    hitCtx.restore();
+
+    hitCtx.globalCompositeOperation = 'source-over';
+
+    // Count Overlap
+    const pixelData = hitCtx.getImageData(0, 0, hitCanvas.width, hitCanvas.height).data;
+    let coveredCount = 0;
+    for (let i = 3; i < pixelData.length; i += 4) {
+        if (pixelData[i] > 20) coveredCount++;
+    }
+
+    const coverage = coveredCount / GAME_STATE.totalLetterPixels;
+
+    if (coverage > CONFIG.completionThreshold) {
+        completeLetter();
+    }
+}
+
+function completeLetter() {
+    GAME_STATE.completedLetters[GAME_STATE.letterIndex] = true;
+    GAME_STATE.letterIndex++;
+
+    resetForNewLetter();
+
+    if (GAME_STATE.letterIndex >= GAME_STATE.word.length) {
+        setTimeout(startNewWord, 800);
+    }
 }
 
 window.addEventListener('load', init);
