@@ -99,9 +99,21 @@ const LETTER_PATHS = {
     'Z': [[[0.15, 0], [0.85, 0]], [[0.85, 0], [0.15, 1]], [[0.15, 1], [0.85, 1]]]
 };
 
-// Words that only use defined letters
+// Educational "Sight Words" (Dolch List + Common Nouns)
+// Grouped roughly by Length/Difficulty for potential leveling
+const WORD_BANKS = {
+    level1: ["A", "I", "GO", "UP", "ME", "MY", "NO", "IS", "IT", "IN", "ON", "HE", "WE", "SO", "DO", "AT", "AM", "BE", "AS", "BY", "OR", "OF", "AN", "IF"],
+    level2: ["THE", "AND", "YOU", "SEE", "CAN", "BIG", "RED", "RUN", "ONE", "TWO", "BLUE", "HAS", "NOT", "FOR", "GET", "YES", "DID", "EAT", "NEW", "SAW", "SAY", "SHE", "HIM", "HER", "HIS", "HAD", "LET", "MAY", "WAY", "WHO", "BUT", "ALL", "ANY", "ARE", "BOY", "BUY", "CAT", "COW", "DOG", "EGG", "FUN", "JOY", "KEY", "MAN", "MOM", "DAD"],
+    level3: ["LOOK", "PLAY", "JUMP", "HELP", "WITH", "THAT", "THIS", "THEY", "WILL", "LIKE", "VOTE", "MAKE", "GOOD", "INTO", "WANT", "HAVE", "WENT", "RIDE", "SOON", "CAME", "FOUR", "FIVE", "NINE", "MUST", "WELL", "ATE", "SAY", "RAN", "NOW", "OUR", "OUT", "TOO", "USE", "WARM", "WASH", "WALK"],
+    level4: ["WHERE", "LITTLE", "THREE", "SEVEN", "YELLOW", "FUNNY", "PLEASE", "PRETTY", "WHITE", "BLACK", "BROWN", "THERE", "UNDER", "ROUND", "AGAIN", "THANK", "SMILE", "THINK", "BRING", "CARRY", "SMALL", "FOUND", "LIGHT", "NEVER", "TODAY", "START", "LAUGH", "EIGHT", "ABOUT"]
+};
+
+// Flatten for default usage, but keep structure available for complexity logic
 const VALID_WORDS = [
-    'FOX', 'BOX', 'CAT', 'BAT', 'HAT', 'FAT', 'SAT', 'RAT', 'MAT', 'PAT', 'TAP', 'MAP', 'HOT', 'POT', 'TOP', 'POP', 'HOP', 'MOP', 'COT', 'TOT', 'ROT', 'LOT', 'BOT'
+    ...WORD_BANKS.level1,
+    ...WORD_BANKS.level2,
+    ...WORD_BANKS.level3,
+    ...WORD_BANKS.level4
 ].filter(w => w.split('').every(c => LETTER_PATHS[c])); // Safety filter
 
 // Configuration
