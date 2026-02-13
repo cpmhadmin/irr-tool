@@ -87,14 +87,12 @@ const VALID_WORDS = [
 // Configuration
 const CONFIG = {
     visualStrokeWidth: 4,      // Thin lines for the letter skeleton
-    hitToleranceWidth: 40,     // Reduced 55->40: Tighter tolerance to prevent "accidental" overlaps
+    hitToleranceWidth: 60,     // Widened 40->60: Very forgiving on "wobble"
 
     // COMPLETION LOGIC:
-    // We check how much of the (wide) path area is painted.
-    // Since the path is wide, filling it roughly is easier.
-    // Increased 0.65->0.85: Must cover 85% of the letter path.
-    // For 'A', the legs are ~80% of length. This forces drawing the crossbar.
-    completionThreshold: 0.85,
+    // 75% coverage required.
+    // This allows missing corners but still requires drawing the main parts.
+    completionThreshold: 0.75,
 
     accuracyThreshold: 0.1, // Not used directly in new logic, implicit in hitToleranceWidth
 
@@ -509,10 +507,9 @@ function checkCoverage() {
     hitCtx.save();
     hitCtx.scale(dpr, dpr);
     hitCtx.strokeStyle = 'blue';
-    // IMPORTANT: The user's painting brush for coverage should be roughly same size as halo?
-    // No, smaller than halo, but big enough to fill it if they trace center.
-    // If halo is 55, user brush should be ~35-40 to make it "fillable".
-    hitCtx.lineWidth = CONFIG.hitToleranceWidth * 0.8;
+    // IMPORTANT: Even though tolerance is wide (60px), we count user paint as narrower (24px)
+    // This prevents just "touching" the area from flooding it with credit.
+    hitCtx.lineWidth = CONFIG.hitToleranceWidth * 0.4;
     hitCtx.lineCap = 'round';
     hitCtx.lineJoin = 'round';
 
