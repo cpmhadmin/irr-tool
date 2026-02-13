@@ -90,9 +90,9 @@ const CONFIG = {
     hitToleranceWidth: 60,     // Widened 40->60: Very forgiving on "wobble"
 
     // COMPLETION LOGIC:
-    // 75% coverage required.
-    // This allows missing corners but still requires drawing the main parts.
-    completionThreshold: 0.75,
+    // Reduced significantly to 0.40 (40% area coverage).
+    // Since the halo is very wide (60px), filling 40% of that huge area with a thin pen is actually quite a lot of work.
+    completionThreshold: 0.40,
 
     accuracyThreshold: 0.1, // Not used directly in new logic, implicit in hitToleranceWidth
 
@@ -507,9 +507,8 @@ function checkCoverage() {
     hitCtx.save();
     hitCtx.scale(dpr, dpr);
     hitCtx.strokeStyle = 'blue';
-    // IMPORTANT: Even though tolerance is wide (60px), we count user paint as narrower (24px)
-    // This prevents just "touching" the area from flooding it with credit.
-    hitCtx.lineWidth = CONFIG.hitToleranceWidth * 0.4;
+    // Increase brush width slightly to make 40% achievable
+    hitCtx.lineWidth = CONFIG.hitToleranceWidth * 0.5;
     hitCtx.lineCap = 'round';
     hitCtx.lineJoin = 'round';
 
