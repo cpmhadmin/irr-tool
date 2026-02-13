@@ -32,13 +32,13 @@ const CVC_WORDS = [
 // Configuration
 const CONFIG = {
     // A stroke is "valid" if 50% of its points are inside the stencil
-    accuracyThreshold: 0.50, // Slightly more forgiving placement
+    accuracyThreshold: 0.50,
 
-    // The letter is "complete" if 25% of its AREA is covered (writing vs coloring)
+    // The letter is "complete" if 25% of its AREA is covered
     completionThreshold: 0.25,
 
     fadeSpeed: 0.08,
-    fontFamily: '"Courier New", Courier, monospace', // Monospace is thinner/cleaner
+    fontFamily: '"Verdana", "Segoe UI", sans-serif',
     guideColor: 'rgba(139, 119, 101, 0.15)',
 
     // Layout calculated on resize
@@ -146,7 +146,7 @@ function calculateLayout() {
     CONFIG.baseline = Math.floor(canvasHeight * GUIDES.grass);
 
     // Measure word to center it
-    ctx.font = `bold ${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
+    ctx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
 
     let totalWidth = 0;
     for (let char of GAME_STATE.word) {
@@ -172,7 +172,7 @@ function calculateTargetPixels() {
     hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
     hitCtx.save();
     hitCtx.scale(dpr, dpr);
-    hitCtx.font = `bold ${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
+    hitCtx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
     hitCtx.textBaseline = 'alphabetic';
     hitCtx.fillStyle = 'red'; // Draw in solid red
 
@@ -258,7 +258,7 @@ function drawGuideLines() {
 }
 
 function getLetterX(index) {
-    ctx.font = `bold ${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
+    ctx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
     let x = CONFIG.startX;
     for (let i = 0; i < index; i++) {
         x += ctx.measureText(GAME_STATE.word[i]).width + CONFIG.letterPadding;
@@ -270,7 +270,7 @@ function drawWordStencil() {
     if (!GAME_STATE.word) return;
 
     ctx.save();
-    ctx.font = `bold ${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
+    ctx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
     ctx.textBaseline = 'alphabetic';
 
     for (let i = 0; i < GAME_STATE.word.length; i++) {
@@ -291,7 +291,7 @@ function drawWordStencil() {
 
 function drawCompletedLetters() {
     ctx.save();
-    ctx.font = `bold ${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
+    ctx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = '#2c3e50'; // Ink color (Dark Blue/Grey)
 
@@ -412,7 +412,7 @@ function validateStroke() {
     hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
     hitCtx.save();
     hitCtx.scale(dpr, dpr);
-    hitCtx.font = `bold ${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
+    hitCtx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
     hitCtx.textBaseline = 'alphabetic';
     hitCtx.fillStyle = 'red';
 
@@ -420,7 +420,7 @@ function validateStroke() {
     const letter = GAME_STATE.word[GAME_STATE.letterIndex];
 
     // Draw thick stroke first to expand hit area
-    hitCtx.lineWidth = CONFIG.letterSize / 4; // Allow significant margin of error
+    hitCtx.lineWidth = CONFIG.letterSize / 4;
     hitCtx.strokeStyle = 'red';
     hitCtx.lineJoin = 'round';
     hitCtx.strokeText(letter, targetX, CONFIG.baseline);
@@ -463,7 +463,6 @@ function validateStroke() {
     GAME_STATE.currentStroke = [];
 
     // 3. Check Overall Coverage
-    // NOTE: We check coverage using a LARGER brush (lineWidth 20) basically saying "did they touch enough of the letter?"
     checkCoverage();
 }
 
@@ -474,7 +473,7 @@ function checkCoverage() {
     // Draw Stencil (Red)
     hitCtx.save();
     hitCtx.scale(dpr, dpr);
-    hitCtx.font = `bold ${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
+    hitCtx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
     hitCtx.textBaseline = 'alphabetic';
     hitCtx.fillStyle = '#FF0000';
     const targetX = getLetterX(GAME_STATE.letterIndex);
