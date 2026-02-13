@@ -89,8 +89,8 @@ const LETTER_PATHS = {
     'U': [
         // Left side down, curve, right side up
         [[0.2, 0], [0.2, 0.7]],
-        generateArc(0.5, 0.7, 0.3, 0.3, Math.PI, 2 * Math.PI), // Bottom bowl
-        [[0.8, 0.7], [0.8, 0]] // Right side up (path direction matters for drawing order but validation doesn't care)
+        generateArc(0.5, 0.7, 0.3, 0.3, Math.PI, 0), // Bottom bowl - Corrected angle for downward curve
+        [[0.8, 0.7], [0.8, 0]] // Right side up
     ],
     'V': [[[0.1, 0], [0.5, 1]], [[0.5, 1], [0.9, 0]]],
     'W': [[[0.1, 0], [0.3, 1]], [[0.3, 1], [0.5, 0.5]], [[0.5, 0.5], [0.7, 1]], [[0.7, 1], [0.9, 0]]],
@@ -283,20 +283,43 @@ function resizeCanvas() {
 function calculateLayout() {
     const rect = canvas.getBoundingClientRect();
     const canvasHeight = rect.height;
+    const canvasWidth = rect.width;
 
     // Logic coordinates
     const top = GUIDES.sky * canvasHeight;
     const bottom = GUIDES.grass * canvasHeight;
     const h = bottom - top;
 
-    CONFIG.letterSize = h; // Height of capital letter
-    CONFIG.baseline = top;
+    // Initial Standard Size
+    let size = h;
+    let padding = 15; // Tighter padding logic
 
-    // Calculate total width
-    const w = CONFIG.letterSize * 0.7; // Aspect ratio approx
-    const totalW = (w + CONFIG.letterPadding) * GAME_STATE.word.length - CONFIG.letterPadding;
+    // Check width constraint
+    const maxW = canvasWidth * 0.90;
+    const aspect = 0.7;
+    const count = GAME_STATE.word.length;
 
-    CONFIG.startX = (rect.width - totalW) / 2;
+    if (count > 0) {
+        // Calculate theoretical width
+        let totalW = (size * aspect + padding) * count - padding;
+
+        if (totalW > maxW) {
+            const scale = maxW / totalW;
+            size *= scale;
+            padding *= scale;
+        }
+    }
+
+    CONFIG.letterSize = size;
+    CONFIG.letterPadding = padding;
+    // Align bottom of letter to grass line
+    CONFIG.baseline = bottom - size;
+
+    // Calculate final width and center
+    const w = CONFIG.letterSize * aspect;
+    const finalTotalW = (w + CONFIG.letterPadding) * count - CONFIG.letterPadding;
+
+    CONFIG.startX = (canvasWidth - finalTotalW) / 2;
 
     calculateTargetArea();
 }
