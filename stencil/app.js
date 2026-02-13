@@ -475,65 +475,174 @@ function validateStroke() {
 
 function checkCoverage() {
     const dpr = window.devicePixelRatio || 1;
-
-    // 1. Draw Halo (Red)
-    hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
-    hitCtx.save();
-    hitCtx.scale(dpr, dpr);
-
     const letter = GAME_STATE.word[GAME_STATE.letterIndex];
+    if (!letter || !LETTER_PATHS[letter]) return;
+
     const path = LETTER_PATHS[letter];
     const lx = getLetterX(GAME_STATE.letterIndex);
     const ly = CONFIG.baseline;
     const s = CONFIG.letterSize;
     const w = s * 0.7;
 
-    hitCtx.lineCap = 'round';
-    hitCtx.lineJoin = 'round';
-    hitCtx.lineWidth = CONFIG.hitToleranceWidth;
-    hitCtx.strokeStyle = 'red';
+    // We must pass EVERY stroke in the letter
+    // e.g. 'A' has 3 strokes. All 3 must be covered > 50%
+    const STROKE_THRESHOLD = 0.50;
+    let allStrokesPassed = true;
 
-    hitCtx.beginPath();
-    path.forEach(stroke => {
-        hitCtx.moveTo(lx + stroke[0][0] * w, ly + stroke[0][1] * s);
-        for (let k = 1; k < stroke.length; k++) hitCtx.lineTo(lx + stroke[k][0] * w, ly + stroke[k][1] * s);
-    });
-    hitCtx.stroke();
-    hitCtx.restore();
+    for (let i = 0; i < path.length; i++) {
+        const strokeSegment = path[i];
 
-    // 2. Draw User Strokes (Blue) with composite 'source-in'
-    // This leaves only blue where it overlaps red
-    hitCtx.globalCompositeOperation = 'source-in';
-    hitCtx.save();
-    hitCtx.scale(dpr, dpr);
-    hitCtx.strokeStyle = 'blue';
-    // Increase brush width slightly to make 40% achievable
-    hitCtx.lineWidth = CONFIG.hitToleranceWidth * 0.5;
-    hitCtx.lineCap = 'round';
-    hitCtx.lineJoin = 'round';
+        // 1. Clear & Setup
+        hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
+        hitCtx.save();
+        hitCtx.scale(dpr, dpr);
+        hitCtx.lineCap = 'round';
+        hitCtx.lineJoin = 'round';
 
-    hitCtx.beginPath();
-    for (let stroke of GAME_STATE.currentLetterStrokes) {
-        if (stroke.length === 0) continue;
-        hitCtx.moveTo(stroke[0].x, stroke[0].y);
-        for (let i = 1; i < stroke.length; i++) hitCtx.lineTo(stroke[i].x, stroke[i].y);
+        // 2. Draw Target Stroke (Red)
+        // Draw slightly wider than user pen to ensure good denominator
+        hitCtx.lineWidth = CONFIG.hitToleranceWidth;
+        hitCtx.strokeStyle = 'red';
+
+        hitCtx.beginPath();
+        hitCtx.moveTo(lx + strokeSegment[0][0] * w, ly + strokeSegment[0][1] * s);
+        for (let k = 1; k < strokeSegment.length; k++) {
+            hitCtx.lineTo(lx + strokeSegment[k][0] * w, ly + strokeSegment[k][1] * s);
+        }
+        hitCtx.stroke();
+
+        // Calculate Bounding Box for Optimization (Logic coords)
+        let minX = strokeSegment[0][0], maxX = strokeSegment[0][0];
+        let minY = strokeSegment[0][1], maxY = strokeSegment[0][1];
+        for (let k = 1; k < strokeSegment.length; k++) {
+            minX = Math.min(minX, strokeSegment[k][0]);
+            maxX = Math.max(maxX, strokeSegment[k][0]);
+            minY = Math.min(minY, strokeSegment[k][1]);
+            maxY = Math.max(maxY, strokeSegment[k][1]);
+        }
+
+        // Convert to Pixel coords for pixel reading
+        const pad = CONFIG.hitToleranceWidth;
+        // px start/end
+        const pStartX = (lx + minX * w) - pad;
+        const pStartY = (ly + minY * s) - pad;
+        const pWidth = (maxX - minX) * w + (pad * 2);
+        const pHeight = (maxY - minY) * s + (pad * 2);
+
+        // 3. Draw User Paint (Blue) with 'source-in'
+        hitCtx.globalCompositeOperation = 'source-in';
+        hitCtx.strokeStyle = 'blue';
+        // User paint is thinner
+        hitCtx.lineWidth = CONFIG.hitToleranceWidth * 0.5;
+
+        hitCtx.beginPath();
+        // Draw ALL user strokes to see if ANY cover this segment
+        for (let uStroke of GAME_STATE.currentLetterStrokes) {
+            if (uStroke.length === 0) continue;
+            hitCtx.moveTo(uStroke[0].x, uStroke[0].y);
+            for (let u = 1; u < uStroke.length; u++) hitCtx.lineTo(uStroke[u].x, uStroke[u].y);
+        }
+        hitCtx.stroke();
+
+        hitCtx.restore(); // restores scale/composite
+
+        // 4. Count Pixels (Red vs Blue is handled by source-in, we just count non-transparent)
+        // We need denominator? 
+        // Logic: 
+        // We need to know how many pixels "Red" had vs how many "Blue" kept.
+        // Actually, 'source-in' replaces everything. We lose the Red count.
+        // Better approach:
+        //  a. Draw Red -> Count Red (Denominator)
+        //  b. Draw Blue (source-in) -> Count Blue (Numerator)
+
+        // Let's redo step 2/3 carefully.
+
+        // RE-DRAW RED just to count it (or we could use math estimation, but pixel counting is safer for curves)
+        // To be efficient, we scan the bounding box once? No.
+        // Let's allow a slightly less optimized but correct 2-pass approach.
     }
-    hitCtx.stroke();
-    hitCtx.restore();
 
-    hitCtx.globalCompositeOperation = 'source-over';
+    // RE-IMPLEMENTING LOOP FOR CORRECTNESS with 2-pass pixel count
+    // (This overrides the loop above for clean code injection)
 
-    // 3. Count pixels
-    const pixelData = hitCtx.getImageData(0, 0, hitCanvas.width, hitCanvas.height).data;
-    let coveredCount = 0;
-    for (let i = 3; i < pixelData.length; i += 4) {
-        if (pixelData[i] > 20) coveredCount++;
+    for (let i = 0; i < path.length; i++) {
+        const strokeSegment = path[i];
+
+        // PASS 1: Count Target Pixels
+        hitCtx.globalCompositeOperation = 'source-over';
+        hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
+        hitCtx.save();
+        hitCtx.scale(dpr, dpr);
+        hitCtx.lineCap = 'round';
+        hitCtx.lineJoin = 'round';
+        hitCtx.lineWidth = CONFIG.hitToleranceWidth;
+        hitCtx.strokeStyle = 'red';
+
+        hitCtx.beginPath();
+        hitCtx.moveTo(lx + strokeSegment[0][0] * w, ly + strokeSegment[0][1] * s);
+        for (let k = 1; k < strokeSegment.length; k++) hitCtx.lineTo(lx + strokeSegment[k][0] * w, ly + strokeSegment[k][1] * s);
+        hitCtx.stroke();
+        hitCtx.restore();
+
+        // Calc Bounds
+        let minX = strokeSegment[0][0], maxX = strokeSegment[0][0];
+        let minY = strokeSegment[0][1], maxY = strokeSegment[0][1];
+        for (let k = 1; k < strokeSegment.length; k++) {
+            minX = Math.min(minX, strokeSegment[k][0]);
+            maxX = Math.max(maxX, strokeSegment[k][0]);
+            minY = Math.min(minY, strokeSegment[k][1]);
+            maxY = Math.max(maxY, strokeSegment[k][1]);
+        }
+        const bX = Math.floor((lx + minX * w - CONFIG.hitToleranceWidth) * dpr);
+        const bY = Math.floor((ly + minY * s - CONFIG.hitToleranceWidth) * dpr);
+        const bW = Math.ceil(((maxX - minX) * w + CONFIG.hitToleranceWidth * 2) * dpr);
+        const bH = Math.ceil(((maxY - minY) * s + CONFIG.hitToleranceWidth * 2) * dpr);
+
+        const safeBX = Math.max(0, bX);
+        const safeBY = Math.max(0, bY);
+        const safeBW = Math.min(hitCanvas.width - safeBX, bW);
+        const safeBH = Math.min(hitCanvas.height - safeBY, bH);
+
+        if (safeBW <= 0 || safeBH <= 0) continue; // Offscreen?
+
+        const pixels1 = hitCtx.getImageData(safeBX, safeBY, safeBW, safeBH).data;
+        let targetCount = 0;
+        for (let p = 3; p < pixels1.length; p += 4) { if (pixels1[p] > 20) targetCount++; }
+
+        // PASS 2: Count Overlap
+        hitCtx.save();
+        hitCtx.scale(dpr, dpr);
+        hitCtx.globalCompositeOperation = 'source-in';
+        hitCtx.strokeStyle = 'blue';
+        hitCtx.lineWidth = CONFIG.hitToleranceWidth * 0.5; // User brush size
+        hitCtx.lineCap = 'round';
+        hitCtx.lineJoin = 'round';
+
+        hitCtx.beginPath();
+        for (let uStroke of GAME_STATE.currentLetterStrokes) {
+            if (uStroke.length === 0) continue;
+            hitCtx.moveTo(uStroke[0].x, uStroke[0].y);
+            for (let u = 1; u < uStroke.length; u++) hitCtx.lineTo(uStroke[u].x, uStroke[u].y);
+        }
+        hitCtx.stroke();
+        hitCtx.restore();
+
+        const pixels2 = hitCtx.getImageData(safeBX, safeBY, safeBW, safeBH).data;
+        let coveredCount = 0;
+        for (let p = 3; p < pixels2.length; p += 4) { if (pixels2[p] > 20) coveredCount++; }
+
+        // CHECK
+        if (targetCount > 0) {
+            const ratio = coveredCount / targetCount;
+            // console.log(`Segment ${i}: ${Math.floor(ratio*100)}%`);
+            if (ratio < STROKE_THRESHOLD) {
+                allStrokesPassed = false;
+                break; // Fail early
+            }
+        }
     }
 
-    const coverage = coveredCount / GAME_STATE.totalLetterPixels;
-    // console.log("Coverage:", coverage);
-
-    if (coverage > CONFIG.completionThreshold) {
+    if (allStrokesPassed) {
         completeLetter();
     }
 }
