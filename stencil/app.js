@@ -15,40 +15,97 @@ const GAME_STATE = {
     isDrawing: false,
     currentStroke: [],
     fadingStrokes: [],
-    currentLetterStrokes: [], // Strokes that are "good" but letter not finished
+    currentLetterStrokes: [],
     completedLetters: [],
-    totalLetterPixels: 0 // Count of pixels in the current target letter
+    totalPathLength: 0 // Total length of the letter path
 };
 
-const CVC_WORDS = [
-    'FOX', 'BOX', 'TOP', 'MOP', 'HOP',
-    'CAT', 'DOG', 'BAT', 'HAT', 'MAT',
-    'RAT', 'SAT', 'FAT', 'RUN', 'FUN',
-    'SUN', 'PIG', 'WIG', 'BIG', 'DIG',
-    'BUG', 'HUG', 'MUG', 'RUG', 'TUG',
-    'HEN', 'MEN', 'PEN', 'TEN', 'DEN'
-];
+// Simplified Vector Paths (0-1 coordinate space)
+// Each letter is an array of strokes. Each stroke is an array of [x, y] points.
+const LETTER_PATHS = {
+    'A': [
+        [[0.5, 0], [0.1, 1]],   // Left diagonal
+        [[0.5, 0], [0.9, 1]],   // Right diagonal
+        [[0.25, 0.6], [0.75, 0.6]] // Crossbar
+    ],
+    'B': [
+        [[0.1, 0], [0.1, 1]],   // Spine
+        [[0.1, 0], [0.6, 0], [0.8, 0.15], [0.6, 0.5], [0.1, 0.5]], // Top loop
+        [[0.1, 0.5], [0.6, 0.5], [0.9, 0.75], [0.6, 1], [0.1, 1]]  // Bottom loop
+    ],
+    'C': [
+        [[0.8, 0.2], [0.5, 0], [0.1, 0.5], [0.5, 1], [0.8, 0.8]] // Curve
+    ],
+    'F': [
+        [[0.1, 0], [0.1, 1]],   // Spine
+        [[0.1, 0], [0.8, 0]],   // Top bar
+        [[0.1, 0.5], [0.6, 0.5]] // Middle bar
+    ],
+    'O': [
+        // simplified circle as 8 points
+        [[0.5, 0], [0.2, 0.1], [0, 0.5], [0.2, 0.9], [0.5, 1], [0.8, 0.9], [1, 0.5], [0.8, 0.1], [0.5, 0]]
+    ],
+    'X': [
+        [[0.1, 0], [0.9, 1]],   // Diagonal 1
+        [[0.9, 0], [0.1, 1]]    // Diagonal 2
+    ],
+    'T': [
+        [[0.5, 0], [0.5, 1]],   // Spine
+        [[0.1, 0], [0.9, 0]]    // Top bar
+    ],
+    'H': [
+        [[0.1, 0], [0.1, 1]],   // Left leg
+        [[0.9, 0], [0.9, 1]],   // Right leg
+        [[0.1, 0.5], [0.9, 0.5]] // Crossbar
+    ],
+    'P': [
+        [[0.1, 0], [0.1, 1]],   // Spine
+        [[0.1, 0], [0.7, 0], [0.9, 0.25], [0.7, 0.5], [0.1, 0.5]] // Loop
+    ],
+    'R': [
+        [[0.1, 0], [0.1, 1]], // Spine
+        [[0.1, 0], [0.7, 0], [0.9, 0.25], [0.7, 0.5], [0.1, 0.5]], // Top Loop
+        [[0.4, 0.5], [0.9, 1]] // Leg
+    ],
+    'M': [
+        [[0.1, 1], [0.1, 0]], // Left leg up
+        [[0.1, 0], [0.5, 0.6]], // Mid down
+        [[0.5, 0.6], [0.9, 0]], // Mid up
+        [[0.9, 0], [0.9, 1]] // Right leg down
+    ],
+    'S': [
+        [[0.8, 0.1], [0.5, 0], [0.2, 0.1], [0.1, 0.3], [0.5, 0.5], [0.9, 0.7], [0.8, 0.9], [0.5, 1], [0.2, 0.9]]
+    ]
+    // Add more as needed
+};
+
+// Words that only use defined letters
+const VALID_WORDS = [
+    'FOX', 'BOX', 'CAT', 'BAT', 'HAT', 'FAT', 'SAT', 'RAT', 'MAT', 'PAT', 'TAP', 'MAP', 'HOT', 'POT', 'TOP', 'POP', 'HOP', 'MOP', 'COT', 'TOT', 'ROT', 'LOT', 'BOT'
+].filter(w => w.split('').every(c => LETTER_PATHS[c])); // Safety filter
 
 // Configuration
 const CONFIG = {
-    // A stroke is "valid" if 50% of its points are inside the stencil
-    accuracyThreshold: 0.50,
+    visualStrokeWidth: 4,      // Thin lines for the letter skeleton
+    hitToleranceWidth: 55,     // Very wide invisible stroke for checking accuracy (The Halo)
 
-    // The letter is "complete" if 25% of its AREA is covered
-    completionThreshold: 0.25,
+    // COMPLETION LOGIC:
+    // We check how much of the (wide) path area is painted.
+    // Since the path is wide, filling it roughly is easier.
+    completionThreshold: 0.65, // Needs to cover 65% of the "wide" tolerance zone area
+
+    accuracyThreshold: 0.1, // Not used directly in new logic, implicit in hitToleranceWidth
 
     fadeSpeed: 0.08,
-    fontFamily: '"Verdana", "Segoe UI", sans-serif',
     guideColor: 'rgba(139, 119, 101, 0.15)',
 
-    // Layout calculated on resize
+    // Layout
     letterSize: 0,
     baseline: 0,
     startX: 0,
-    letterPadding: 15
+    letterPadding: 30
 };
 
-// Guide line positions (percentages)
 const GUIDES = {
     worm: 0.85,
     grass: 0.65,
@@ -56,12 +113,10 @@ const GUIDES = {
     sky: 0.25
 };
 
-// Initialization
 function init() {
     window.addEventListener('resize', resizeCanvas);
-    resizeCanvas(); // Initial size
+    resizeCanvas();
 
-    // Input Events
     canvas.addEventListener('mousedown', startDrawing);
     canvas.addEventListener('mousemove', drawStroke);
     canvas.addEventListener('mouseup', endDrawing);
@@ -72,31 +127,22 @@ function init() {
     canvas.addEventListener('touchend', endDrawing, { passive: false });
     canvas.addEventListener('touchcancel', endDrawing, { passive: false });
 
-    // Controls
-    clearBtn.addEventListener('click', () => {
-        resetWord(); // Resets current word progress
-    });
-
+    clearBtn.addEventListener('click', resetWord);
     newWordBtn.addEventListener('click', startNewWord);
 
-    // Initial Word
     startNewWord();
-
-    // Start Loop
     requestAnimationFrame(gameLoop);
 }
 
 function startNewWord() {
     let newWord = GAME_STATE.word;
     while (newWord === GAME_STATE.word) {
-        newWord = CVC_WORDS[Math.floor(Math.random() * CVC_WORDS.length)];
+        newWord = VALID_WORDS[Math.floor(Math.random() * VALID_WORDS.length)];
     }
     GAME_STATE.word = newWord;
     GAME_STATE.letterIndex = 0;
 
-    resetForNewLetter(); // Word setup
-
-    // Re-calculate centering
+    resetForNewLetter();
     calculateLayout();
 }
 
@@ -105,21 +151,17 @@ function resetForNewLetter() {
     GAME_STATE.currentStroke = [];
     GAME_STATE.currentLetterStrokes = [];
 
-    // Re-initialize completed array if starting fresh word
     if (GAME_STATE.letterIndex === 0) {
         GAME_STATE.completedLetters = new Array(GAME_STATE.word.length).fill(false);
     }
 
-    // Calculate pixel mass of the new target letter for coverage checks
-    calculateTargetPixels();
+    calculateTargetArea();
 }
 
 function resetWord() {
-    GAME_STATE.letterIndex = 0;
-    resetForNewLetter();
+    startNewWord(); // Just pick a new one or restart
 }
 
-// Resize & Calculations
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
@@ -128,7 +170,6 @@ function resizeCanvas() {
     canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
 
-    // Resize Hit Canvas (Match physical pixels)
     hitCanvas.width = canvas.width;
     hitCanvas.height = canvas.height;
 
@@ -139,78 +180,76 @@ function calculateLayout() {
     const rect = canvas.getBoundingClientRect();
     const canvasHeight = rect.height;
 
-    // Font sizing
-    // Sky (0.25) to Grass (0.65) = 0.40 height
-    const bodyHeight = (GUIDES.grass - GUIDES.sky) * canvasHeight;
-    CONFIG.letterSize = Math.floor(bodyHeight * 1.8);
-    CONFIG.baseline = Math.floor(canvasHeight * GUIDES.grass);
+    // Logic coordinates
+    const top = GUIDES.sky * canvasHeight;
+    const bottom = GUIDES.grass * canvasHeight;
+    const h = bottom - top;
 
-    // Measure word to center it
-    ctx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
+    CONFIG.letterSize = h; // Height of capital letter
+    CONFIG.baseline = top;
 
-    let totalWidth = 0;
-    for (let char of GAME_STATE.word) {
-        totalWidth += ctx.measureText(char).width + CONFIG.letterPadding;
-    }
-    totalWidth -= CONFIG.letterPadding; // Remove last padding
+    // Calculate total width
+    const w = CONFIG.letterSize * 0.7; // Aspect ratio approx
+    const totalW = (w + CONFIG.letterPadding) * GAME_STATE.word.length - CONFIG.letterPadding;
 
-    CONFIG.startX = (rect.width - totalWidth) / 2;
+    CONFIG.startX = (rect.width - totalW) / 2;
 
-    // Re-calc target pixels since size changed
-    calculateTargetPixels();
+    calculateTargetArea();
 }
 
-function calculateTargetPixels() {
+function calculateTargetArea() {
     if (GAME_STATE.letterIndex >= GAME_STATE.word.length) return;
 
     const letter = GAME_STATE.word[GAME_STATE.letterIndex];
-    if (!letter) return;
+    const path = LETTER_PATHS[letter];
+    if (!path) return;
 
     const dpr = window.devicePixelRatio || 1;
-
-    // Clear Hit Canvas
     hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
     hitCtx.save();
     hitCtx.scale(dpr, dpr);
-    hitCtx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
-    hitCtx.textBaseline = 'alphabetic';
-    hitCtx.fillStyle = 'red'; // Draw in solid red
 
-    const targetX = getLetterX(GAME_STATE.letterIndex);
+    const x = getLetterX(GAME_STATE.letterIndex);
+    const y = CONFIG.baseline;
+    const s = CONFIG.letterSize;
+    const w = s * 0.7;
 
-    // Draw thick stroke first to expand hit area (match validation logic)
-    hitCtx.lineWidth = CONFIG.letterSize / 4;
-    hitCtx.strokeStyle = 'red';
+    // Draw the "Ideal" wide path (The Target Area)
+    hitCtx.lineCap = 'round';
     hitCtx.lineJoin = 'round';
-    hitCtx.strokeText(letter, targetX, CONFIG.baseline);
+    hitCtx.lineWidth = CONFIG.hitToleranceWidth;
+    hitCtx.strokeStyle = 'red';
 
-    // Then fill
-    hitCtx.fillText(letter, targetX, CONFIG.baseline);
+    hitCtx.beginPath();
+    path.forEach(stroke => {
+        hitCtx.moveTo(x + stroke[0][0] * w, y + stroke[0][1] * s);
+        for (let i = 1; i < stroke.length; i++) {
+            hitCtx.lineTo(x + stroke[i][0] * w, y + stroke[i][1] * s);
+        }
+    });
+    hitCtx.stroke();
     hitCtx.restore();
-
-    // Scan buffer to count pixels
-    // Optimization: limit scan to letter bounding box
-    const width = Math.floor(ctx.measureText(letter).width * dpr) + 20 * dpr;
-    const height = Math.floor(CONFIG.letterSize * dpr) + 20 * dpr;
 
     // Count pixels
     const pixelData = hitCtx.getImageData(0, 0, hitCanvas.width, hitCanvas.height).data;
-
     let count = 0;
     for (let i = 3; i < pixelData.length; i += 4) {
         if (pixelData[i] > 20) count++;
     }
-
     GAME_STATE.totalLetterPixels = count;
 }
 
-// Drawing Loop
+function getLetterX(index) {
+    const w = CONFIG.letterSize * 0.7;
+    return CONFIG.startX + index * (w + CONFIG.letterPadding);
+}
+
+// Rendering
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width / window.devicePixelRatio, canvas.height / window.devicePixelRatio);
 
     drawGuideLines();
-    drawWordStencil();
-    drawCompletedLetters();
+    drawWordPaths();
     drawCurrentLetterStrokes();
     drawFadingStrokes();
     drawCurrentStroke();
@@ -226,81 +265,60 @@ function drawGuideLines() {
     ctx.lineWidth = 1;
     ctx.strokeStyle = CONFIG.guideColor;
 
-    // Sky
-    ctx.beginPath();
-    ctx.lineWidth = 2;
-    ctx.moveTo(0, height * GUIDES.sky);
-    ctx.lineTo(width, height * GUIDES.sky);
-    ctx.stroke();
+    [GUIDES.sky, GUIDES.grass, GUIDES.worm].forEach(y => {
+        ctx.beginPath();
+        ctx.moveTo(0, height * y);
+        ctx.lineTo(width, height * y);
+        ctx.stroke();
+    });
 
-    // Plane (Dashed)
+    // Plane (dashed)
     ctx.beginPath();
-    ctx.lineWidth = 1;
     ctx.setLineDash([8, 8]);
     ctx.moveTo(0, height * GUIDES.plane);
     ctx.lineTo(width, height * GUIDES.plane);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Grass
-    ctx.beginPath();
-    ctx.moveTo(0, height * GUIDES.grass);
-    ctx.lineTo(width, height * GUIDES.grass);
-    ctx.stroke();
-
-    // Worm
-    ctx.beginPath();
-    ctx.moveTo(0, height * GUIDES.worm);
-    ctx.lineTo(width, height * GUIDES.worm);
-    ctx.stroke();
-
     ctx.restore();
 }
 
-function getLetterX(index) {
-    ctx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
-    let x = CONFIG.startX;
-    for (let i = 0; i < index; i++) {
-        x += ctx.measureText(GAME_STATE.word[i]).width + CONFIG.letterPadding;
-    }
-    return x;
-}
-
-function drawWordStencil() {
+function drawWordPaths() {
     if (!GAME_STATE.word) return;
 
-    ctx.save();
-    ctx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
-    ctx.textBaseline = 'alphabetic';
-
-    for (let i = 0; i < GAME_STATE.word.length; i++) {
-        // Don't draw stencil if already completed
-        if (GAME_STATE.completedLetters[i]) continue;
-
-        // If it's the current target, slight highlight
-        if (i === GAME_STATE.letterIndex) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; // Darker gray for active target
-        } else {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; // Very faint for others
-        }
-
-        ctx.fillText(GAME_STATE.word[i], getLetterX(i), CONFIG.baseline);
-    }
-    ctx.restore();
-}
-
-function drawCompletedLetters() {
-    ctx.save();
-    ctx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = '#2c3e50'; // Ink color (Dark Blue/Grey)
+    const s = CONFIG.letterSize;
+    const w = s * 0.7;
 
     for (let i = 0; i < GAME_STATE.word.length; i++) {
         if (GAME_STATE.completedLetters[i]) {
-            ctx.fillText(GAME_STATE.word[i], getLetterX(i), CONFIG.baseline);
+            ctx.strokeStyle = '#2c3e50'; // Completed
+            ctx.lineWidth = CONFIG.visualStrokeWidth + 1; // Slightly bolder
+        } else if (i === GAME_STATE.letterIndex) {
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)'; // Active Target (Grey)
+            ctx.lineWidth = CONFIG.visualStrokeWidth;
+        } else {
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)'; // Inactive (Faint)
+            ctx.lineWidth = CONFIG.visualStrokeWidth;
         }
+
+        const letter = GAME_STATE.word[i];
+        const path = LETTER_PATHS[letter];
+        if (!path) continue;
+
+        const lx = getLetterX(i);
+        const ly = CONFIG.baseline;
+
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        path.forEach(stroke => {
+            ctx.moveTo(lx + stroke[0][0] * w, ly + stroke[0][1] * s);
+            for (let k = 1; k < stroke.length; k++) {
+                ctx.lineTo(lx + stroke[k][0] * w, ly + stroke[k][1] * s);
+            }
+        });
+        ctx.stroke();
     }
-    ctx.restore();
 }
 
 function drawCurrentLetterStrokes() {
@@ -308,16 +326,14 @@ function drawCurrentLetterStrokes() {
 
     ctx.beginPath();
     ctx.strokeStyle = '#2c3e50';
-    ctx.lineWidth = 6;
+    ctx.lineWidth = CONFIG.visualStrokeWidth + 2; // Ink slightly thicker than template
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
     for (let stroke of GAME_STATE.currentLetterStrokes) {
         if (stroke.length === 0) continue;
         ctx.moveTo(stroke[0].x, stroke[0].y);
-        for (let i = 1; i < stroke.length; i++) {
-            ctx.lineTo(stroke[i].x, stroke[i].y);
-        }
+        for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x, stroke[i].y);
     }
     ctx.stroke();
 }
@@ -326,16 +342,14 @@ function drawCurrentStroke() {
     if (GAME_STATE.currentStroke.length === 0) return;
 
     ctx.beginPath();
-    ctx.strokeStyle = '#2c3e50'; // Ink color
-    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#2c3e50';
+    ctx.lineWidth = CONFIG.visualStrokeWidth + 2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
     const points = GAME_STATE.currentStroke;
     ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) {
-        ctx.lineTo(points[i].x, points[i].y);
-    }
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
     ctx.stroke();
 }
 
@@ -350,32 +364,26 @@ function drawFadingStrokes() {
         }
 
         ctx.beginPath();
-        // Fade to red-ish
         ctx.strokeStyle = `rgba(200, 80, 80, ${item.opacity})`;
-        ctx.lineWidth = 6;
+        ctx.lineWidth = CONFIG.visualStrokeWidth + 2;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
         const points = item.points;
         if (points.length > 0) {
             ctx.moveTo(points[0].x, points[0].y);
-            for (let j = 1; j < points.length; j++) {
-                ctx.lineTo(points[j].x, points[j].y);
-            }
+            for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y);
             ctx.stroke();
         }
     }
 }
 
-// Input Handling
+// Interactions
 function getCoords(e) {
     const rect = canvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-        x: clientX - rect.left,
-        y: clientY - rect.top
-    };
+    return { x: clientX - rect.left, y: clientY - rect.top };
 }
 
 function startDrawing(e) {
@@ -384,15 +392,13 @@ function startDrawing(e) {
 
     GAME_STATE.isDrawing = true;
     GAME_STATE.currentStroke = [];
-    const coords = getCoords(e);
-    GAME_STATE.currentStroke.push(coords);
+    GAME_STATE.currentStroke.push(getCoords(e));
 }
 
 function drawStroke(e) {
     if (!GAME_STATE.isDrawing) return;
     e.preventDefault();
-    const coords = getCoords(e);
-    GAME_STATE.currentStroke.push(coords);
+    GAME_STATE.currentStroke.push(getCoords(e));
 }
 
 function endDrawing(e) {
@@ -408,102 +414,118 @@ function validateStroke() {
 
     const dpr = window.devicePixelRatio || 1;
 
-    // 1. Is this specific stroke valid? (Inside the guide)
+    const letter = GAME_STATE.word[GAME_STATE.letterIndex];
+    if (!letter || !LETTER_PATHS[letter]) return;
+
+    const path = LETTER_PATHS[letter];
+    const lx = getLetterX(GAME_STATE.letterIndex);
+    const ly = CONFIG.baseline;
+    const s = CONFIG.letterSize;
+    const w = s * 0.7;
+
+    // 1. Is the stroke inside the Halo?
+    // We check this by drawing the halo on hitCanvas and checking overlap
+    // Re-draw halo just to be safe
     hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
     hitCtx.save();
     hitCtx.scale(dpr, dpr);
-    hitCtx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
-    hitCtx.textBaseline = 'alphabetic';
-    hitCtx.fillStyle = 'red';
-
-    const targetX = getLetterX(GAME_STATE.letterIndex);
-    const letter = GAME_STATE.word[GAME_STATE.letterIndex];
-
-    // Draw thick stroke first to expand hit area
-    hitCtx.lineWidth = CONFIG.letterSize / 4;
-    hitCtx.strokeStyle = 'red';
+    hitCtx.lineCap = 'round';
     hitCtx.lineJoin = 'round';
-    hitCtx.strokeText(letter, targetX, CONFIG.baseline);
+    hitCtx.lineWidth = CONFIG.hitToleranceWidth;
+    hitCtx.strokeStyle = 'red';
 
-    // Then fill
-    hitCtx.fillText(letter, targetX, CONFIG.baseline);
+    hitCtx.beginPath();
+    path.forEach(stroke => {
+        hitCtx.moveTo(lx + stroke[0][0] * w, ly + stroke[0][1] * s);
+        for (let k = 1; k < stroke.length; k++) {
+            hitCtx.lineTo(lx + stroke[k][0] * w, ly + stroke[k][1] * s);
+        }
+    });
+    hitCtx.stroke();
     hitCtx.restore();
 
+    // Check points
     let hits = 0;
-    let totalPoints = 0;
-    const sampleRate = 3;
-
-    for (let i = 0; i < points.length; i += sampleRate) {
-        const pt = points[i];
-        const px = Math.floor(pt.x * dpr);
-        const py = Math.floor(pt.y * dpr);
-
+    let total = 0;
+    const sample = 3;
+    for (let i = 0; i < points.length; i += sample) {
+        const px = Math.floor(points[i].x * dpr);
+        const py = Math.floor(points[i].y * dpr);
         if (px >= 0 && py >= 0 && px < hitCanvas.width && py < hitCanvas.height) {
             const alpha = hitCtx.getImageData(px, py, 1, 1).data[3];
             if (alpha > 50) hits++;
-            totalPoints++;
+            total++;
         }
     }
 
-    const accuracy = totalPoints > 0 ? (hits / totalPoints) : 0;
-    const isValidStroke = accuracy >= CONFIG.accuracyThreshold;
+    const accuracy = total > 0 ? hits / total : 0;
 
-    if (!isValidStroke) {
-        // Bad stroke: Fade it out
-        GAME_STATE.fadingStrokes.push({
-            points: [...GAME_STATE.currentStroke],
-            opacity: 1.0
-        });
+    if (accuracy < 0.6) { // Must keep 60% of stroke inside the halo
+        GAME_STATE.fadingStrokes.push({ points: [...points], opacity: 1.0 });
         GAME_STATE.currentStroke = [];
         return;
     }
 
-    // 2. Good stroke: Keep it
-    GAME_STATE.currentLetterStrokes.push([...GAME_STATE.currentStroke]);
+    // Stroke is valid! Keep it.
+    GAME_STATE.currentLetterStrokes.push([...points]);
     GAME_STATE.currentStroke = [];
 
-    // 3. Check Overall Coverage
     checkCoverage();
 }
 
 function checkCoverage() {
     const dpr = window.devicePixelRatio || 1;
-    hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
 
-    // Draw Stencil (Red)
+    // 1. Draw Halo (Red)
+    hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height);
     hitCtx.save();
     hitCtx.scale(dpr, dpr);
-    hitCtx.font = `${CONFIG.letterSize}px ${CONFIG.fontFamily}`;
-    hitCtx.textBaseline = 'alphabetic';
-    hitCtx.fillStyle = '#FF0000';
-    const targetX = getLetterX(GAME_STATE.letterIndex);
+
     const letter = GAME_STATE.word[GAME_STATE.letterIndex];
-    hitCtx.fillText(letter, targetX, CONFIG.baseline);
+    const path = LETTER_PATHS[letter];
+    const lx = getLetterX(GAME_STATE.letterIndex);
+    const ly = CONFIG.baseline;
+    const s = CONFIG.letterSize;
+    const w = s * 0.7;
+
+    hitCtx.lineCap = 'round';
+    hitCtx.lineJoin = 'round';
+    hitCtx.lineWidth = CONFIG.hitToleranceWidth;
+    hitCtx.strokeStyle = 'red';
+
+    hitCtx.beginPath();
+    path.forEach(stroke => {
+        hitCtx.moveTo(lx + stroke[0][0] * w, ly + stroke[0][1] * s);
+        for (let k = 1; k < stroke.length; k++) hitCtx.lineTo(lx + stroke[k][0] * w, ly + stroke[k][1] * s);
+    });
+    hitCtx.stroke();
     hitCtx.restore();
 
-    // Mask with valid strokes (Blue)
+    // 2. Draw User Strokes (Blue) with composite 'source-in'
+    // This leaves only blue where it overlaps red
     hitCtx.globalCompositeOperation = 'source-in';
-
     hitCtx.save();
     hitCtx.scale(dpr, dpr);
-    hitCtx.strokeStyle = '#0000FF';
-    hitCtx.lineWidth = CONFIG.letterSize / 3; // Make the "brush" for validation very thick relative to letter size
+    hitCtx.strokeStyle = 'blue';
+    // IMPORTANT: The user's painting brush for coverage should be roughly same size as halo?
+    // No, smaller than halo, but big enough to fill it if they trace center.
+    // If halo is 55, user brush should be ~35-40 to make it "fillable".
+    hitCtx.lineWidth = CONFIG.hitToleranceWidth * 0.8;
     hitCtx.lineCap = 'round';
     hitCtx.lineJoin = 'round';
 
     hitCtx.beginPath();
     for (let stroke of GAME_STATE.currentLetterStrokes) {
-        if (stroke.length > 0) {
-            hitCtx.moveTo(stroke[0].x, stroke[0].y);
-            for (let i = 1; i < stroke.length; i++) hitCtx.lineTo(stroke[i].x, stroke[i].y);
-        }
+        if (stroke.length === 0) continue;
+        hitCtx.moveTo(stroke[0].x, stroke[0].y);
+        for (let i = 1; i < stroke.length; i++) hitCtx.lineTo(stroke[i].x, stroke[i].y);
     }
     hitCtx.stroke();
     hitCtx.restore();
 
     hitCtx.globalCompositeOperation = 'source-over';
 
-    // Count Overlap
+    // 3. Count pixels
     const pixelData = hitCtx.getImageData(0, 0, hitCanvas.width, hitCanvas.height).data;
     let coveredCount = 0;
     for (let i = 3; i < pixelData.length; i += 4) {
@@ -511,6 +533,7 @@ function checkCoverage() {
     }
 
     const coverage = coveredCount / GAME_STATE.totalLetterPixels;
+    // console.log("Coverage:", coverage);
 
     if (coverage > CONFIG.completionThreshold) {
         completeLetter();
