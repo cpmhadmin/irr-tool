@@ -53,8 +53,31 @@ body {
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
 }
 
-.clear-button:active {
+.new-word-button {
+    background: linear-gradient(135deg, #a8e063 0%, #56ab2f 100%);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(86, 171, 47, 0.4);
+}
+
+.new-word-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(86, 171, 47, 0.6);
+}
+
+.new-word-button:active {
     transform: translateY(0);
+}
+
+.word-display {
+    display: none;
+    /* Hidden used for internal logic or debug if needed */
 }
 
 .level-indicator {
@@ -70,21 +93,17 @@ body {
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
     overflow: hidden;
     /* Parchment texture using CSS */
-    background-image: 
-        repeating-linear-gradient(
-            0deg,
+    background-image:
+        repeating-linear-gradient(0deg,
             transparent,
             transparent 2px,
             rgba(139, 119, 101, 0.03) 2px,
-            rgba(139, 119, 101, 0.03) 4px
-        ),
-        repeating-linear-gradient(
-            90deg,
+            rgba(139, 119, 101, 0.03) 4px),
+        repeating-linear-gradient(90deg,
             transparent,
             transparent 2px,
             rgba(139, 119, 101, 0.03) 2px,
-            rgba(139, 119, 101, 0.03) 4px
-        );
+            rgba(139, 119, 101, 0.03) 4px);
 }
 
 #drawingCanvas {
@@ -100,20 +119,20 @@ body {
     body {
         padding: 10px;
     }
-    
+
     #drawingCanvas {
         height: calc(100vh - 150px);
     }
-    
+
     .controls {
         padding: 12px 20px;
     }
-    
+
     .clear-button {
         padding: 10px 25px;
         font-size: 14px;
     }
-    
+
     .level-indicator {
         font-size: 16px;
     }
