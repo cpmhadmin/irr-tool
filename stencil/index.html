@@ -13,9 +13,14 @@
 <body>
     <div class="container">
         <div class="controls">
+            <div class="settings-group">
+                <label>Words: <input type="number" id="wprInput" value="3" min="1" max="50"></label>
+                <label>Rounds: <input type="number" id="rtwInput" value="3" min="1" max="50"></label>
+            </div>
+            <div class="progress-display" id="progressDisplay">Round 1/3 • Word 1/3</div>
+            <button id="clearBtn" class="clear-button">Clear</button>
             <button id="newWordBtn" class="new-word-button">New Word</button>
             <div class="word-display" id="wordDisplay"></div>
-            <button id="clearBtn" class="clear-button">Clear</button>
             <div class="level-indicator">Level: Beginner</div>
         </div>
 

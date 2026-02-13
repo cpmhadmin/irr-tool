@@ -139,11 +139,45 @@ function init() {
     canvas.addEventListener('touchend', endDrawing, { passive: false });
     canvas.addEventListener('touchcancel', endDrawing, { passive: false });
 
-    clearBtn.addEventListener('click', resetWord);
-    newWordBtn.addEventListener('click', startNewWord);
+    document.getElementById('clearBtn').addEventListener('click', resetWord);
+    document.getElementById('newWordBtn').addEventListener('click', forceNextWord);
 
-    startNewWord();
+    // Settings Listeners
+    document.getElementById('wprInput').addEventListener('change', (e) => {
+        GAME_STATE.wordsPerRound = Math.min(50, Math.max(1, parseInt(e.target.value) || 3));
+        resetGame();
+    });
+    document.getElementById('rtwInput').addEventListener('change', (e) => {
+        GAME_STATE.roundsToWin = Math.min(50, Math.max(1, parseInt(e.target.value) || 3));
+        resetGame();
+    });
+
+    // Victory Modal
+    // Note: Modal HTML might not be injected yet if full file rewrite didn't happen perfectly, but assuming it exists from Step 1.
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    if (playAgainBtn) playAgainBtn.addEventListener('click', () => {
+        document.getElementById('victoryModal').classList.add('hidden');
+        resetGame();
+    });
+
+    resetGame();
     requestAnimationFrame(gameLoop);
+}
+
+function resetGame() {
+    GAME_STATE.currentRound = 1;
+    GAME_STATE.completedWordsInRound = 0;
+    GAME_STATE.hasStarted = false;
+    GAME_STATE.startTime = null;
+
+    // Grab inputs just in case
+    const wpr = document.getElementById('wprInput');
+    const rtw = document.getElementById('rtwInput');
+    if (wpr) GAME_STATE.wordsPerRound = parseInt(wpr.value);
+    if (rtw) GAME_STATE.roundsToWin = parseInt(rtw.value);
+
+    updateProgressDisplay();
+    startNewWord();
 }
 
 function startNewWord() {
@@ -156,6 +190,17 @@ function startNewWord() {
 
     resetForNewLetter();
     calculateLayout();
+}
+
+function forceNextWord() {
+    startNewWord();
+}
+
+function updateProgressDisplay() {
+    const el = document.getElementById('progressDisplay');
+    if (el) {
+        el.textContent = `Round ${GAME_STATE.currentRound}/${GAME_STATE.roundsToWin} • Word ${GAME_STATE.completedWordsInRound + 1}/${GAME_STATE.wordsPerRound}`;
+    }
 }
 
 function resetForNewLetter() {
@@ -402,6 +447,12 @@ function startDrawing(e) {
     e.preventDefault();
     if (GAME_STATE.letterIndex >= GAME_STATE.word.length) return;
 
+    // START TIMER ON FIRST STROKE
+    if (!GAME_STATE.hasStarted) {
+        GAME_STATE.hasStarted = true;
+        GAME_STATE.startTime = Date.now();
+    }
+
     GAME_STATE.isDrawing = true;
     GAME_STATE.currentStroke = [];
     GAME_STATE.currentStroke.push(getCoords(e));
@@ -601,8 +652,38 @@ function completeLetter() {
     resetForNewLetter();
 
     if (GAME_STATE.letterIndex >= GAME_STATE.word.length) {
-        setTimeout(startNewWord, 800);
+        setTimeout(completeWord, 800);
     }
+}
+
+function completeWord() {
+    GAME_STATE.completedWordsInRound++;
+
+    if (GAME_STATE.completedWordsInRound >= GAME_STATE.wordsPerRound) {
+        // Round Complete
+        GAME_STATE.completedWordsInRound = 0;
+        GAME_STATE.currentRound++;
+
+        if (GAME_STATE.currentRound > GAME_STATE.roundsToWin) {
+            finishGame();
+            return;
+        }
+    }
+
+    updateProgressDisplay();
+    startNewWord();
+}
+
+function finishGame() {
+    const durationMs = Date.now() - GAME_STATE.startTime;
+    const minutes = Math.floor(durationMs / 60000);
+    const seconds = Math.floor((durationMs % 60000) / 1000).toString().padStart(2, '0');
+
+    const msg = document.getElementById('victoryMessage');
+    if (msg) msg.textContent = `You completed Level ${GAME_STATE.wordsPerRound}x${GAME_STATE.roundsToWin} in ${minutes}:${seconds}!`;
+
+    const modal = document.getElementById('victoryModal');
+    if (modal) modal.classList.remove('hidden');
 }
 
 window.addEventListener('load', init);
