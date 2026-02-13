@@ -196,12 +196,7 @@ function forceNextWord() {
     startNewWord();
 }
 
-function updateProgressDisplay() {
-    const el = document.getElementById('progressDisplay');
-    if (el) {
-        el.textContent = `Round ${GAME_STATE.currentRound}/${GAME_STATE.roundsToWin} • Word ${GAME_STATE.completedWordsInRound + 1}/${GAME_STATE.wordsPerRound}`;
-    }
-}
+
 
 function resetForNewLetter() {
     GAME_STATE.fadingStrokes = [];
@@ -645,6 +640,14 @@ function checkCoverage() {
     }
 }
 
+function updateProgressDisplay() {
+    const el = document.getElementById('progressDisplay');
+    if (el) {
+        // Swapped order: Word X/Y • Round A/B
+        el.textContent = `Word ${GAME_STATE.completedWordsInRound + 1}/${GAME_STATE.wordsPerRound} • Round ${GAME_STATE.currentRound}/${GAME_STATE.roundsToWin}`;
+    }
+}
+
 function completeLetter() {
     GAME_STATE.completedLetters[GAME_STATE.letterIndex] = true;
     GAME_STATE.letterIndex++;
@@ -682,8 +685,12 @@ function finishGame() {
     const msg = document.getElementById('victoryMessage');
     if (msg) msg.textContent = `You completed Level ${GAME_STATE.wordsPerRound}x${GAME_STATE.roundsToWin} in ${minutes}:${seconds}!`;
 
+    // Explicitly force display to override any hidden classes or issues
     const modal = document.getElementById('victoryModal');
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
 }
 
 window.addEventListener('load', init);
